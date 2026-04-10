@@ -1,0 +1,172 @@
+<div class="build-row" *ngIf="build" [class.zen-mode]="hideUI">
+  <div class="status-indicators">
+    <div
+      class="badge tier"
+      *ngIf="build.minTier || !hideUI"
+      [class.active]="build.minTier"
+      (click)="cycleTier()"
+    >
+      {{ build.minTier || 'Tier' }}
+    </div>
+    <div
+      class="badge approval"
+      *ngIf="build.requiresApproval || !hideUI"
+      [class.active]="build.requiresApproval"
+      (click)="toggleApproval()"
+    >
+      Approval Only
+    </div>
+  </div>
+
+  <div class="gear-row">
+    <div class="gear-slot main" (click)="openSelector('weapon')" [class.empty]="!build.mainHand">
+      <img *ngIf="build.mainHand" [src]="gearData.getImageUrl(build.mainHand.id)" />
+      <span class="empty-text" *ngIf="!hideUI && !build.mainHand">+ Weapon/Off</span>
+
+      <div class="swaps-overlay" *ngIf="build.mainHand && build.swaps.weapon.length > 0">
+        <div
+          class="gear-slot small"
+          *ngFor="let swap of build.swaps.weapon; let i = index"
+          (click)="$event.stopPropagation(); removeSwap('weapon', i)"
+        >
+          <img [src]="gearData.getImageUrl(swap.id)" />
+          <div class="remove-overlay" *ngIf="!hideUI">×</div>
+        </div>
+      </div>
+      <div
+        class="add-swap-btn"
+        *ngIf="build.mainHand && !hideUI"
+        (click)="$event.stopPropagation(); openSelector('weapon', true)"
+      >
+        +
+      </div>
+    </div>
+
+    <div class="gear-slot main" (click)="openSelector('head')" [class.empty]="!build.head">
+      <img *ngIf="build.head" [src]="gearData.getImageUrl(build.head.id)" />
+      <span class="empty-text" *ngIf="!hideUI && !build.head">+ Head</span>
+      <div class="swaps-overlay" *ngIf="build.head && build.swaps.head.length > 0">
+        <div
+          class="gear-slot small"
+          *ngFor="let swap of build.swaps.head; let i = index"
+          (click)="$event.stopPropagation(); removeSwap('head', i)"
+        >
+          <img [src]="gearData.getImageUrl(swap.id)" />
+          <div class="remove-overlay" *ngIf="!hideUI">×</div>
+        </div>
+      </div>
+      <div
+        class="add-swap-btn"
+        *ngIf="build.head && !hideUI"
+        (click)="$event.stopPropagation(); openSelector('head', true)"
+      >
+        +
+      </div>
+    </div>
+
+    <div class="gear-slot main" (click)="openSelector('chest')" [class.empty]="!build.chest">
+      <img *ngIf="build.chest" [src]="gearData.getImageUrl(build.chest.id)" />
+      <span class="empty-text" *ngIf="!hideUI && !build.chest">+ Chest</span>
+      <div class="swaps-overlay" *ngIf="build.chest && build.swaps.chest.length > 0">
+        <div
+          class="gear-slot small"
+          *ngFor="let swap of build.swaps.chest; let i = index"
+          (click)="$event.stopPropagation(); removeSwap('chest', i)"
+        >
+          <img [src]="gearData.getImageUrl(swap.id)" />
+          <div class="remove-overlay" *ngIf="!hideUI">×</div>
+        </div>
+      </div>
+      <div
+        class="add-swap-btn"
+        *ngIf="build.chest && !hideUI"
+        (click)="$event.stopPropagation(); openSelector('chest', true)"
+      >
+        +
+      </div>
+    </div>
+
+    <div class="gear-slot main" (click)="openSelector('shoes')" [class.empty]="!build.shoes">
+      <img *ngIf="build.shoes" [src]="gearData.getImageUrl(build.shoes.id)" />
+      <span class="empty-text" *ngIf="!hideUI && !build.shoes">+ Shoes</span>
+      <div class="swaps-overlay" *ngIf="build.shoes && build.swaps.shoes.length > 0">
+        <div
+          class="gear-slot small"
+          *ngFor="let swap of build.swaps.shoes; let i = index"
+          (click)="$event.stopPropagation(); removeSwap('shoes', i)"
+        >
+          <img [src]="gearData.getImageUrl(swap.id)" />
+          <div class="remove-overlay" *ngIf="!hideUI">×</div>
+        </div>
+      </div>
+      <div
+        class="add-swap-btn"
+        *ngIf="build.shoes && !hideUI"
+        (click)="$event.stopPropagation(); openSelector('shoes', true)"
+      >
+        +
+      </div>
+    </div>
+
+    <div class="gear-slot main" (click)="openSelector('cape')" [class.empty]="!build.cape">
+      <img *ngIf="build.cape" [src]="gearData.getImageUrl(build.cape.id)" />
+      <span class="empty-text" *ngIf="!hideUI && !build.cape">+ Cape</span>
+      <div class="swaps-overlay" *ngIf="build.cape && build.swaps.cape.length > 0">
+        <div
+          class="gear-slot small"
+          *ngFor="let swap of build.swaps.cape; let i = index"
+          (click)="$event.stopPropagation(); removeSwap('cape', i)"
+        >
+          <img [src]="gearData.getImageUrl(swap.id)" />
+          <div class="remove-overlay" *ngIf="!hideUI">×</div>
+        </div>
+      </div>
+      <div
+        class="add-swap-btn"
+        *ngIf="build.cape && !hideUI"
+        (click)="$event.stopPropagation(); openSelector('cape', true)"
+      >
+        +
+      </div>
+    </div>
+
+    <div class="gear-slot main" (click)="openSelector('food')" [class.empty]="!build.food">
+      <img *ngIf="build.food" [src]="gearData.getImageUrl(build.food.id)" />
+      <span class="empty-text" *ngIf="!hideUI && !build.food">+ Food</span>
+      <div class="swaps-overlay" *ngIf="build.food && build.swaps.food.length > 0">
+        <div
+          class="gear-slot small"
+          *ngFor="let swap of build.swaps.food; let i = index"
+          (click)="$event.stopPropagation(); removeSwap('food', i)"
+        >
+          <img [src]="gearData.getImageUrl(swap.id)" />
+          <div class="remove-overlay" *ngIf="!hideUI">×</div>
+        </div>
+      </div>
+      <div
+        class="add-swap-btn"
+        *ngIf="build.food && !hideUI"
+        (click)="$event.stopPropagation(); openSelector('food', true)"
+      >
+        +
+      </div>
+    </div>
+
+    <div class="gear-slot main" (click)="openSelector('potion')" [class.empty]="!build.potion">
+      <img *ngIf="build.potion" [src]="gearData.getImageUrl(build.potion.id)" />
+      <span class="empty-text" *ngIf="!hideUI && !build.potion">+ Pot</span>
+    </div>
+  </div>
+
+  <div class="delete-action" *ngIf="!hideUI">
+    <button class="delete-btn" (click)="deleteRequest.emit()">×</button>
+  </div>
+</div>
+
+<app-item-selector
+  [isOpen]="isSelectorOpen"
+  [category]="activeSelectorCategory"
+  [isSwapMode]="isSwapMode"
+  (itemSelected)="handleItemSelected($event)"
+  (close)="isSelectorOpen = false"
+></app-item-selector>

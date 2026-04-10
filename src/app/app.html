@@ -1,0 +1,81 @@
+<button class="toggle-ui-btn" (click)="hideUI = !hideUI" title="Toggle UI">
+  {{ hideUI ? '+' : '−' }}
+</button>
+
+<div class="toolbar-wrapper" *ngIf="!hideUI">
+  <div class="toolbar">
+    <h1 class="project-title">Mabu Builds Viewer</h1>
+
+    <div class="toolbar-actions">
+      <input
+        type="file"
+        #fileInput
+        (change)="importData($event)"
+        accept=".json"
+        style="display: none"
+      />
+      <button class="btn-secondary" (click)="fileInput.click()">↓ Import</button>
+      <button class="btn-secondary" (click)="exportData()">↑ Export</button>
+
+      <button class="btn-primary" (click)="addCollection('party')">+ Make Party Builds</button>
+      <button class="btn-primary" (click)="addCollection('group')">+ Make Group Builds</button>
+    </div>
+  </div>
+</div>
+
+<div class="content-wrapper" [class.zen-mode]="hideUI">
+  <div class="empty-state" *ngIf="collections.length === 0 && !hideUI">
+    <h2>Welcome to Mabu Builds</h2>
+    <p>Select an option from the top right to start creating groups.</p>
+  </div>
+
+  <ng-container *ngFor="let collection of collections">
+    <div
+      class="collection-container"
+      *ngIf="!hideUI || collection.isVisibleInViewMode"
+      [class.zen-mode]="hideUI"
+    >
+      <div class="collection-header" *ngIf="!hideUI">
+        <input
+          class="collection-name-input"
+          [(ngModel)]="collection.name"
+          placeholder="Custom Name..."
+        />
+
+        <button
+          class="btn-secondary toggle-vis-btn"
+          (click)="toggleVisibility(collection.id)"
+          [class.hidden-state]="!collection.isVisibleInViewMode"
+        >
+          {{ collection.isVisibleInViewMode ? '👁 Visible' : '🚫 Hidden' }}
+        </button>
+
+        <button
+          class="btn-primary add-build-btn"
+          (click)="addBuild(collection.id)"
+          [disabled]="collection.builds.length >= (collection.type === 'party' ? 20 : 12)"
+          style="margin-left: 16px"
+        >
+          + Add Build ({{ collection.builds.length }}/{{ collection.type === 'party' ? 20 : 12 }})
+        </button>
+        <button class="btn-danger" (click)="removeCollection(collection.id)">
+          Delete {{ collection.type === 'party' ? 'Party' : 'Group' }}
+        </button>
+      </div>
+
+      <div class="collection-header view-only" *ngIf="hideUI && collection.name">
+        <h2 class="view-only-title">{{ collection.name }}</h2>
+      </div>
+
+      <div class="build-list" [ngClass]="collection.type">
+        <app-build-card
+          *ngFor="let build of collection.builds"
+          [build]="build"
+          [hideUI]="hideUI"
+          (deleteRequest)="deleteBuild(collection.id, build.id)"
+        >
+        </app-build-card>
+      </div>
+    </div>
+  </ng-container>
+</div>

@@ -1,0 +1,84 @@
+@use "sass:color";
+
+$modal-bg: #121214; 
+$border-color: #27272a;
+$text-main: #e2e8f0;
+$text-muted: #8b92a5;
+$accent: #d4af37;
+$slot-bg: #09090b;
+
+.modal-backdrop {
+  position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+  background: rgba(0, 0, 0, 0.85); display: flex; justify-content: center; align-items: center;
+  z-index: 1000; backdrop-filter: blur(4px);
+}
+
+.modal-content {
+  background: $modal-bg; border: 1px solid $border-color; border-radius: 8px;
+  width: 90%; max-width: 800px;
+  max-height: 80vh; 
+  display: flex; flex-direction: column; padding: 24px; color: $text-main;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
+}
+
+.modal-header {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 20px; border-bottom: 1px solid $border-color; padding-bottom: 12px;
+  h3 { margin: 0; font-size: 1.5rem; color: $accent; text-transform: capitalize; }
+  .close-btn { background: transparent; border: none; color: $text-muted; font-size: 1.5rem; cursor: pointer; &:hover { color: #ff4757; } }
+}
+
+.search-bar {
+  width: 100%; padding: 12px 16px; margin-bottom: 20px; background: #09090a;
+  border: 1px solid $border-color; color: $text-main; border-radius: 4px; font-size: 1rem;
+  box-sizing: border-box;
+  &:focus { outline: none; border-color: #71717a; }
+  &::placeholder { color: #52525b; }
+}
+
+.modal-actions {
+  margin-bottom: 20px;
+  .back-btn {
+    background: transparent; border: 1px solid $border-color; color: $text-main;
+    padding: 8px 16px; border-radius: 4px; cursor: pointer; font-weight: bold;
+    &:hover { background: #27272a; border-color: #71717a; }
+  }
+}
+
+.item-list, .tier-container {
+  overflow-y: auto; padding-right: 8px; 
+  &::-webkit-scrollbar { width: 8px; }
+  &::-webkit-scrollbar-track { background: #09090a; border-radius: 4px; }
+  &::-webkit-scrollbar-thumb { background: $border-color; border-radius: 4px; &:hover { background: color.adjust($border-color, $lightness: 10%); } }
+}
+
+.item-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
+
+  .text-row {
+    display: flex; align-items: center; padding: 14px 16px;
+    background: $slot-bg; border: 1px solid $border-color;
+    border-radius: 6px; cursor: pointer; transition: all 0.1s ease;
+
+    &:hover { background: #27272a; border-color: $accent; }
+    .item-name { font-size: 0.95rem; color: $text-main; font-weight: 600; }
+  }
+}
+
+.tier-container {
+  display: flex; flex-direction: column; gap: 12px;
+
+  .tier-row { display: flex; flex-direction: row; gap: 8px; }
+
+  .text-card {
+    flex: 1; display: flex; align-items: center; justify-content: center; cursor: pointer;
+    padding: 12px; background: $slot-bg; border: 1px solid $border-color;
+    border-radius: 4px; transition: all 0.1s ease; text-align: center; min-height: 40px;
+
+    &:hover { background: #27272a; border-color: $accent; }
+
+    &.tier-card { .tier-label { font-size: 1.1rem; font-weight: bold; color: $accent; } }
+  }
+}

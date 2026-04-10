@@ -1,0 +1,110 @@
+@use "sass:color";
+
+:host {
+  display: flex; flex-direction: column; min-height: 100vh;
+  background-color: transparent; color: #e2e8f0; font-family: sans-serif;
+}
+
+.toolbar-wrapper {
+  position: fixed; top: 0; left: 0; width: 100%; padding: 16px;
+  z-index: 50; display: flex; justify-content: center; pointer-events: none; box-sizing: border-box;
+}
+
+.toolbar {
+  pointer-events: auto; display: flex; justify-content: space-between; align-items: center; 
+  background: #121214; padding: 12px 24px; border-radius: 6px; 
+  border: 1px solid #27272a; width: 100%; max-width: 1200px; box-shadow: 0 10px 30px rgba(0,0,0,0.8); 
+  
+  .project-title { margin: 0; font-size: 1.25rem; color: #e2e8f0; font-weight: bold; letter-spacing: 0.5px; }
+  .toolbar-actions { display: flex; gap: 12px; }
+}
+
+.toggle-ui-btn {
+  position: fixed; top: 16px; right: 16px; background: #18181b; border: 1px solid #3f3f46; 
+  color: #a1a1aa; width: 32px; height: 32px; border-radius: 50%; opacity: 0.4; 
+  font-size: 1.2rem; display: flex; justify-content: center; align-items: center;
+  z-index: 100; transition: all 0.2s ease; line-height: 1; padding-bottom: 2px; 
+  &:hover { opacity: 1; background: #27272a; color: white; border-color: #71717a; }
+}
+
+.content-wrapper {
+  flex: 1; display: flex; flex-direction: column; 
+  align-items: center; justify-content: flex-start; 
+  width: 100%; padding: 110px 24px 40px; box-sizing: border-box; max-width: 100%; overflow-x: hidden;
+  
+  &.zen-mode { padding-top: 40px; justify-content: center; }
+}
+
+.collection-container {
+  position: relative; z-index: 1; 
+  width: fit-content; min-width: 1000px; max-width: 100%; 
+  margin-bottom: 60px; padding: 32px; box-sizing: border-box;
+  border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px;
+  display: flex; flex-direction: column; align-items: center; 
+  
+  &::before {
+    content: ''; position: absolute; inset: 0;
+    background: rgba(0, 0, 0, 0.55); backdrop-filter: blur(12px);
+    border-radius: inherit; z-index: -1; pointer-events: none;
+  }
+
+  &.zen-mode { 
+    background-color: #09090ba2;
+    border-color: transparent; padding: 20px; 
+    &::before { display: none; } 
+  }
+}
+
+.build-list {
+  display: grid;
+  width: fit-content;
+  max-width: 100%;
+  gap: 8px 48px;
+  justify-content: center;
+  grid-auto-flow: column;
+
+  &.party {
+    grid-template-rows: repeat(10, min-content);
+    grid-template-columns: repeat(2, max-content);
+  }
+
+  &.group {
+    grid-template-rows: repeat(6, min-content);
+    grid-template-columns: repeat(2, max-content);
+  }
+
+  @media (max-width: 1900px) {
+    grid-auto-flow: row;
+    grid-template-rows: none;
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+}
+
+.collection-header {
+  display: flex; align-items: center; gap: 16px; margin-bottom: 32px; padding-bottom: 16px; border-bottom: 1px solid #27272a; width: 100%;
+  &.view-only { border-bottom: none; padding-bottom: 0; margin-bottom: 32px; justify-content: center; }
+  
+  .view-only-title { color: #d4af37; font-size: 2.2rem; margin: 0; letter-spacing: 1.5px; text-transform: uppercase; text-shadow: 0 4px 10px rgba(0,0,0,0.9); }
+
+  .collection-name-input {
+    background: transparent; border: 1px solid transparent; color: #d4af37;
+    font-size: 1.6rem; font-weight: bold; padding: 6px 12px; border-radius: 4px; width: 350px;
+    &:focus { outline: none; background: #09090b; border-color: #3f3f46; color: #fde047; }
+  }
+  
+  .btn-danger { margin-left: auto; }
+}
+
+button {
+  font-family: inherit; cursor: pointer; border-radius: 4px; font-weight: 600; border: none; transition: 0.2s;
+  &.btn-secondary { background: #27272a; color: #e2e8f0; padding: 10px 16px; &:hover { background: #3f3f46; } }
+  &.btn-primary { 
+    background: #d4af37; color: #09090a; padding: 10px 20px; 
+    &:disabled { background: #3f3f46; color: #71717a; cursor: not-allowed; } 
+    &:hover:not(:disabled) { background: color.adjust(#d4af37, $lightness: 10%); } 
+  }
+  &.btn-danger { background: transparent; border: 1px solid #9f1239; color: #f43f5e; padding: 10px 16px; &:hover { background: #9f1239; color: white; } }
+}
+
+.empty-state { width: 100%; text-align: center; color: #71717a; margin-top: 15vh; h2 { color: #a1a1aa; font-size: 2rem; } }

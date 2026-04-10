@@ -1,0 +1,41 @@
+<div class="modal-backdrop" *ngIf="isOpen" (click)="closeModal()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3>
+        <span *ngIf="step === 'base'">Select {{ category | titlecase }}</span>
+        <span *ngIf="step === 'tier'">Select Tier: {{ selectedGroup?.name }}</span>
+      </h3>
+      <button class="close-btn" (click)="closeModal()">X</button>
+    </div>
+
+    <input
+      *ngIf="step === 'base'"
+      type="text"
+      class="search-bar"
+      placeholder="Search items..."
+      [(ngModel)]="searchQuery"
+    />
+
+    <div class="modal-actions" *ngIf="step === 'tier'">
+      <button class="back-btn" (click)="goBack()">← Back to Items</button>
+    </div>
+
+    <div class="item-list base-list" *ngIf="step === 'base'">
+      <div class="text-row" *ngFor="let group of filteredGroups" (click)="selectGroup(group)">
+        <span class="item-name">{{ group.name }}</span>
+      </div>
+    </div>
+
+    <div class="tier-container" *ngIf="step === 'tier'">
+      <div class="tier-row" *ngFor="let tierGroup of organizedTiers">
+        <div
+          class="text-card tier-card"
+          *ngFor="let item of tierGroup.items"
+          (click)="selectVariation(item)"
+        >
+          <span class="tier-label">{{ getTierLabel(item.name) }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
