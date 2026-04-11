@@ -1,5 +1,6 @@
 import { Component, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { PlayerBuild, SlotCategory, GearItem, BuildSwap } from '../../shared/models/item';
 import { ItemSelector } from '../item-selector/item-selector';
 import { GearData } from '../../services/gear-data';
@@ -7,19 +8,27 @@ import { GearData } from '../../services/gear-data';
 @Component({
   selector: 'app-build-card',
   standalone: true,
-  imports: [CommonModule, ItemSelector],
+  imports: [CommonModule, FormsModule, ItemSelector],
   templateUrl: './build-card.html',
   styleUrls: ['./build-card.scss'],
 })
 export class BuildCard {
   @Input() build!: PlayerBuild;
   @Input() hideUI = false;
+  @Input() isFirst = false;
+  @Input() isLast = false;
+
   @Output() deleteRequest = new EventEmitter<void>();
+  @Output() duplicateRequest = new EventEmitter<void>();
+  @Output() moveUp = new EventEmitter<void>();
+  @Output() moveDown = new EventEmitter<void>();
 
   isSelectorOpen = false;
   activeSelectorCategory: SlotCategory | null = null;
   isSwapMode = false;
   availableTiers = ['', 'T8+', 'T9+', 'T10+'];
+
+  newTag = '';
 
   constructor(public gearData: GearData) {}
 
@@ -33,11 +42,16 @@ export class BuildCard {
   handleItemSelected(item: GearItem) {
     if (this.activeSelectorCategory) {
       const category = this.activeSelectorCategory as unknown as keyof BuildSwap;
+
       if (this.isSwapMode) {
         if (!this.build.swaps[category]) this.build.swaps[category] = [];
         this.build.swaps[category].push(item);
       } else {
         if (this.activeSelectorCategory === 'weapon') {
+          if (this.build.title === 'New Build' || this.build.title.trim() === '') {
+            const cleanName = item.name.replace(/^(\d+\.\d+\s+|T\d\s+)/, '').trim();
+            this.build.title = cleanName;
+          }
           this.build.mainHand = item;
         } else {
           (this.build as any)[this.activeSelectorCategory] = item;
@@ -64,5 +78,21 @@ export class BuildCard {
   toggleApproval() {
     if (this.hideUI) return;
     this.build.requiresApproval = !this.build.requiresApproval;
+  }
+
+  addTag(event?: Event) {
+    if (event) event.preventDefault();
+    const tag = this.newTag.trim();
+    if (tag) {
+      if (!this.build.tags) this.build.tags = [];
+      this.build.tags.push(tag);
+      this.newTag = '';
+    }
+  }
+
+  removeTag(index: number) {
+    if (this.build.tags) {
+      this.build.tags.splice(index, 1);
+    }
   }
 }

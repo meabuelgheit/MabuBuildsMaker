@@ -4,29 +4,61 @@ $bg-hover: rgba(255, 255, 255, 0.04);
 
 .build-row {
   display: flex; flex-direction: row; align-items: center; 
-  padding: 16px 12px; width: 100%; box-sizing: border-box; 
+  padding: 8px 6px; 
+  width: 100%; box-sizing: border-box; 
   transition: background 0.1s; 
   background-color: transparent; border-radius: 8px;
   
+  &.zen-mode {
+    padding: 16px 12px;
+  }
+  
   &:hover:not(.zen-mode) { 
     background-color: $bg-hover; 
-    .delete-action { opacity: 1; pointer-events: auto; }
+    .card-actions { opacity: 1; pointer-events: auto; }
     .status-indicators .badge:not(.active) { opacity: 0.3; pointer-events: auto; }
   }
 }
 
 .status-indicators {
-  display: flex; flex-direction: column; gap: 3px; 
-  width: 105px; flex-shrink: 0; margin-right: 16px;
-  
+  display: flex; flex-direction: column; gap: 4px; 
+  width: 110px; 
+  flex-shrink: 0; margin-right: 8px;
+
+  .build-title-input {
+    background: #09090b; border: 1px solid #3f3f46; color: #e2e8f0;
+    padding: 4px 6px; border-radius: 4px; font-size: 0.8rem; font-weight: bold; width: 100%; box-sizing: border-box;
+    margin-bottom: 4px;
+    &:focus { outline: none; border-color: #d4af37; }
+  }
+
+  .tags-container {
+    display: flex; flex-direction: column; gap: 4px; margin-bottom: 4px; width: 100%;
+    
+    .tag-input {
+      background: transparent; border: 1px dashed #3f3f46; color: #a1a1aa;
+      padding: 4px; border-radius: 3px; font-size: 0.7rem; width: 100%; box-sizing: border-box; text-align: center;
+      &:focus { outline: none; border-color: #d4af37; color: white; }
+    }
+  }
+
   .badge { 
-    font-size: 0.75rem; font-weight: bold; text-align: center; 
-    padding: 6px 8px; border-radius: 3px; cursor: pointer; 
-    transition: all 0.2s; opacity: 0;
+    font-size: 0.7rem; font-weight: bold; text-align: center; 
+    padding: 6px 4px; border-radius: 3px; cursor: pointer; 
+    transition: all 0.2s; opacity: 0; display: flex; justify-content: center; align-items: center; gap: 4px;
+    
+    width: 100%; box-sizing: border-box; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
     
     &.active { opacity: 1; pointer-events: auto; }
     &.tier { background: #d4af37; color: #09090b; border: 1px solid #d4af37; }
-    &.approval { background: #9f1239; color: #ffffff; border: 1px solid #be123c; padding: 6px 12px; white-space: nowrap; }
+    &.approval { background: #9f1239; color: #ffffff; border: 1px solid #be123c; }
+    &.tag { 
+      background: #27272a; color: #e2e8f0; border: 1px solid #3f3f46; padding: 4px 6px; 
+      justify-content: space-between;
+      
+      .remove-tag-icon { font-size: 1rem; line-height: 0.5; padding-left: 4px; }
+      &:hover { border-color: #f43f5e; color: #f43f5e; }
+    }
   }
 }
 
@@ -84,11 +116,22 @@ $bg-hover: rgba(255, 255, 255, 0.04);
   &:hover { background: #d4af37; color: black; border-color: #d4af37; }
 }
 
-.delete-action {
-  margin-left: auto; padding-left: 20px; opacity: 0; pointer-events: none; transition: opacity 0.2s;
-  .delete-btn {
+.card-actions {
+  display: flex; gap: 4px; margin-left: auto; padding-left: 8px; opacity: 0; pointer-events: none; transition: opacity 0.2s;
+  
+  .move-actions {
+    display: flex; flex-direction: column; gap: 2px; margin-right: 4px;
+    .icon-btn { width: 24px; height: 24px; font-size: 0.7rem; border-radius: 4px; }
+  }
+
+  .icon-btn {
     background: transparent; border: 1px solid #3f3f46; color: #a1a1aa;
-    width: 32px; height: 32px; border-radius: 50%; cursor: pointer;
-    &:hover { background: #9f1239; color: white; border-color: #be123c; }
+    width: 28px; height: 28px; border-radius: 4px; cursor: pointer; display: flex; justify-content: center; align-items: center; font-size: 1rem;
+    
+    &:hover:not(:disabled) { background: #27272a; color: white; border-color: #71717a; }
+    &:disabled { opacity: 0.3; cursor: not-allowed; }
+
+    &.copy-btn:hover { background: #0ea5e9; color: white; border-color: #38bdf8; }
+    &.delete-btn:hover { background: #9f1239; color: white; border-color: #be123c; }
   }
 }

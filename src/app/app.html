@@ -17,6 +17,10 @@
       <button class="btn-secondary" (click)="fileInput.click()">↓ Import</button>
       <button class="btn-secondary" (click)="exportData()">↑ Export</button>
 
+      <button class="btn-danger" (click)="isTrashModalOpen = true" *ngIf="trashedBuilds.length > 0">
+        🗑️ Trash ({{ trashedBuilds.length }})
+      </button>
+
       <button class="btn-primary" (click)="addCollection('party')">+ Make Party Builds</button>
       <button class="btn-primary" (click)="addCollection('group')">+ Make Group Builds</button>
     </div>
@@ -69,13 +73,66 @@
 
       <div class="build-list" [ngClass]="collection.type">
         <app-build-card
-          *ngFor="let build of collection.builds"
+          *ngFor="let build of collection.builds; let i = index"
           [build]="build"
           [hideUI]="hideUI"
+          [isFirst]="i === 0"
+          [isLast]="i === collection.builds.length - 1"
           (deleteRequest)="deleteBuild(collection.id, build.id)"
+          (duplicateRequest)="openTargetSelector(build, 'duplicate')"
+          (moveUp)="moveBuild(collection.id, build.id, -1)"
+          (moveDown)="moveBuild(collection.id, build.id, 1)"
         >
         </app-build-card>
       </div>
     </div>
   </ng-container>
+</div>
+
+<div class="modal-backdrop" *ngIf="isTrashModalOpen" (click)="isTrashModalOpen = false">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3>🗑️ Trashed Builds</h3>
+      <button class="close-btn" (click)="isTrashModalOpen = false">X</button>
+    </div>
+    <div class="trash-list">
+      <div class="trash-item" *ngFor="let tb of trashedBuilds">
+        <span class="trash-name">{{ tb.title }}</span>
+        <button class="btn-primary" (click)="openTargetSelector(tb, 'restore')">Restore</button>
+      </div>
+      <div
+        *ngIf="trashedBuilds.length === 0"
+        style="color: #71717a; text-align: center; padding: 20px"
+      >
+        Trash is empty.
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" *ngIf="isTargetModalOpen" (click)="closeTargetModal()">
+  <div class="modal-content small-modal" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3>Select Target Destination</h3>
+      <button class="close-btn" (click)="closeTargetModal()">X</button>
+    </div>
+    <p style="margin-top: 0; color: #a1a1aa">
+      Where do you want to send '{{ pendingBuild?.title }}'?
+    </p>
+    <div class="target-list">
+      <button
+        class="target-btn"
+        *ngFor="let col of collections"
+        (click)="confirmTarget(col.id)"
+        [disabled]="col.builds.length >= (col.type === 'party' ? 20 : 12)"
+      >
+        {{ col.name }}
+        <span class="target-type"
+          >({{ col.type | titlecase }}) - {{ col.builds.length }}/{{
+            col.type === 'party' ? 20 : 12
+          }}</span
+        >
+      </button>
+    </div>
+  </div>
 </div>
