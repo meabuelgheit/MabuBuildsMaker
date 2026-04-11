@@ -23,6 +23,13 @@ export class App {
   hideUI = false;
   collections: BuildCollection[] = [];
 
+  trashedBuilds: PlayerBuild[] = [];
+  isTrashModalOpen = false;
+
+  isTargetModalOpen = false;
+  targetAction: 'duplicate' | 'restore' | null = null;
+  pendingBuild: PlayerBuild | null = null;
+
   constructor(private cdr: ChangeDetectorRef) {}
 
   addCollection(type: 'party' | 'group') {
@@ -66,6 +73,7 @@ export class App {
       swaps: { weapon: [], head: [], chest: [], shoes: [], cape: [], food: [] },
       requiresApproval: false,
       minTier: '',
+      tags: [],
     };
     collection.builds.push(newBuild);
   }
@@ -73,8 +81,60 @@ export class App {
   deleteBuild(collectionId: string, buildId: string) {
     const collection = this.collections.find((c) => c.id === collectionId);
     if (collection) {
-      collection.builds = collection.builds.filter((b) => b.id !== buildId);
+      const buildIndex = collection.builds.findIndex((b) => b.id === buildId);
+      if (buildIndex > -1) {
+        const [deleted] = collection.builds.splice(buildIndex, 1);
+        this.trashedBuilds.push(deleted);
+      }
     }
+  }
+
+  moveBuild(collectionId: string, buildId: string, direction: -1 | 1) {
+    const collection = this.collections.find((c) => c.id === collectionId);
+    if (!collection) return;
+
+    const idx = collection.builds.findIndex((b) => b.id === buildId);
+    if (idx < 0) return;
+
+    const newIdx = idx + direction;
+    if (newIdx >= 0 && newIdx < collection.builds.length) {
+      const temp = collection.builds[idx];
+      collection.builds[idx] = collection.builds[newIdx];
+      collection.builds[newIdx] = temp;
+    }
+  }
+
+  openTargetSelector(build: PlayerBuild, action: 'duplicate' | 'restore') {
+    if (this.collections.length === 0) {
+      alert('You need at least one group or party to do this.');
+      return;
+    }
+    this.pendingBuild = build;
+    this.targetAction = action;
+    this.isTargetModalOpen = true;
+  }
+
+  closeTargetModal() {
+    this.isTargetModalOpen = false;
+    this.pendingBuild = null;
+    this.targetAction = null;
+  }
+
+  confirmTarget(collectionId: string) {
+    if (!this.pendingBuild || !this.targetAction) return;
+    const targetCollection = this.collections.find((c) => c.id === collectionId);
+    if (!targetCollection) return;
+
+    const clonedBuild: PlayerBuild = JSON.parse(JSON.stringify(this.pendingBuild));
+    clonedBuild.id = crypto.randomUUID();
+
+    targetCollection.builds.push(clonedBuild);
+
+    if (this.targetAction === 'restore') {
+      this.trashedBuilds = this.trashedBuilds.filter((b) => b.id !== this.pendingBuild!.id);
+    }
+
+    this.closeTargetModal();
   }
 
   exportData() {
@@ -107,6 +167,7 @@ export class App {
             isVisibleInViewMode: c.isVisibleInViewMode !== false,
             builds: c.builds.map((b: any) => ({
               ...b,
+              tags: b.tags || [],
               swaps: {
                 ...b.swaps,
                 weapon: b.swaps?.weapon || b.swaps?.offHand || [],

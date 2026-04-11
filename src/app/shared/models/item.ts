@@ -53,4 +53,5 @@ export interface PlayerBuild {
   swaps: BuildSwap;
   requiresApproval: boolean;
   minTier: string;
+  tags?: string[];
 }

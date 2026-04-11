@@ -1,5 +1,29 @@
 <div class="build-row" *ngIf="build" [class.zen-mode]="hideUI">
   <div class="status-indicators">
+    <input
+      *ngIf="!hideUI"
+      class="build-title-input"
+      [(ngModel)]="build.title"
+      placeholder="Build Name..."
+    />
+
+    <div class="tags-container" *ngIf="build.tags?.length || !hideUI">
+      <div
+        class="badge tag active"
+        *ngFor="let tag of build.tags; let i = index"
+        (click)="!hideUI && removeTag(i)"
+      >
+        {{ tag }} <span *ngIf="!hideUI" class="remove-tag-icon">×</span>
+      </div>
+      <input
+        *ngIf="!hideUI"
+        class="tag-input"
+        [(ngModel)]="newTag"
+        (keydown.enter)="addTag($event)"
+        placeholder="+ Tag"
+      />
+    </div>
+
     <div
       class="badge tier"
       *ngIf="build.minTier || !hideUI"
@@ -158,8 +182,19 @@
     </div>
   </div>
 
-  <div class="delete-action" *ngIf="!hideUI">
-    <button class="delete-btn" (click)="deleteRequest.emit()">×</button>
+  <div class="card-actions" *ngIf="!hideUI">
+    <div class="move-actions">
+      <button class="icon-btn" (click)="moveUp.emit()" [disabled]="isFirst" title="Move Up">
+        ▲
+      </button>
+      <button class="icon-btn" (click)="moveDown.emit()" [disabled]="isLast" title="Move Down">
+        ▼
+      </button>
+    </div>
+    <button class="icon-btn copy-btn" (click)="duplicateRequest.emit()" title="Duplicate">
+      📋
+    </button>
+    <button class="icon-btn delete-btn" (click)="deleteRequest.emit()" title="Delete">×</button>
   </div>
 </div>
 
