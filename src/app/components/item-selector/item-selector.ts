@@ -1,4 +1,12 @@
-import { Component, Input, Output, EventEmitter, OnInit } from '@angular/core';
+import {
+  Component,
+  Input,
+  Output,
+  EventEmitter,
+  OnInit,
+  OnDestroy,
+  ElementRef,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { GearItem, SlotCategory, GroupedItem } from '../../shared/models/item';
@@ -11,7 +19,7 @@ import { GearData } from '../../services/gear-data';
   templateUrl: './item-selector.html',
   styleUrls: ['./item-selector.scss'],
 })
-export class ItemSelector implements OnInit {
+export class ItemSelector implements OnInit, OnDestroy {
   @Input() isOpen = false;
   @Input() category: SlotCategory | null = null;
   @Input() isSwapMode = false;
@@ -26,13 +34,24 @@ export class ItemSelector implements OnInit {
   step: 'base' | 'tier' = 'base';
   selectedGroup: GroupedItem | null = null;
 
-  constructor(public gearData: GearData) {}
+  constructor(
+    public gearData: GearData,
+    private el: ElementRef,
+  ) {}
 
   ngOnInit() {
+    document.body.appendChild(this.el.nativeElement);
+
     this.gearData.getAvailableItems().subscribe((items) => {
       this.allItems = items;
       this.groupItems();
     });
+  }
+
+  ngOnDestroy() {
+    if (this.el.nativeElement && this.el.nativeElement.parentNode) {
+      this.el.nativeElement.parentNode.removeChild(this.el.nativeElement);
+    }
   }
 
   groupItems() {

@@ -8,7 +8,7 @@ import { GearItem } from '../shared/models/item';
   providedIn: 'root',
 })
 export class GearData {
-  private dataUrl = '/items.json';
+  private dataUrl = 'items.json';
 
   constructor(private http: HttpClient) {}
 
