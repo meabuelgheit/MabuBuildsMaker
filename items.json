@@ -33504,6 +33504,11 @@
   { "id": "T8_MEAL_STEW@2", "name": "8.2 Beef Stew", "category": "food" },
   { "id": "T8_MEAL_STEW@3", "name": "8.3 Beef Stew", "category": "food" },
 
+  { "id": "T8_MEAL_STEW_FISH", "name": "8.0 Eel Stew", "category": "food" },
+  { "id": "T8_MEAL_STEW_FISH@1", "name": "8.1 Eel Stew", "category": "food" },
+  { "id": "T8_MEAL_STEW_FISH@2", "name": "8.2 Eel Stew", "category": "food" },
+  { "id": "T8_MEAL_STEW_FISH@3", "name": "8.3 Eel Stew", "category": "food" },
+
   { "id": "T8_MEAL_SANDWICH", "name": "8.0 Beef Sandwich", "category": "food" },
   { "id": "T8_MEAL_SANDWICH@1", "name": "8.1 Beef Sandwich", "category": "food" },
   { "id": "T8_MEAL_SANDWICH@2", "name": "8.2 Beef Sandwich", "category": "food" },
