@@ -16750,6 +16750,131 @@
     "category": "chest"
   },
   {
+    "id": "T4_ARMOR_LEATHER_DRAGON",
+    "name": "4.0 Dragonslayer Jacket",
+    "category": "chest"
+  },
+  {
+    "id": "T4_ARMOR_LEATHER_DRAGON@1",
+    "name": "4.1 Dragonslayer Jacket",
+    "category": "chest"
+  },
+  {
+    "id": "T4_ARMOR_LEATHER_DRAGON@2",
+    "name": "4.2 Dragonslayer Jacket",
+    "category": "chest"
+  },
+  {
+    "id": "T4_ARMOR_LEATHER_DRAGON@3",
+    "name": "4.3 Dragonslayer Jacket",
+    "category": "chest"
+  },
+  {
+    "id": "T4_ARMOR_LEATHER_DRAGON@4",
+    "name": "4.4 Dragonslayer Jacket",
+    "category": "chest"
+  },
+  {
+    "id": "T5_ARMOR_LEATHER_DRAGON",
+    "name": "5.0 Dragonslayer Jacket",
+    "category": "chest"
+  },
+  {
+    "id": "T5_ARMOR_LEATHER_DRAGON@1",
+    "name": "5.1 Dragonslayer Jacket",
+    "category": "chest"
+  },
+  {
+    "id": "T5_ARMOR_LEATHER_DRAGON@2",
+    "name": "5.2 Dragonslayer Jacket",
+    "category": "chest"
+  },
+  {
+    "id": "T5_ARMOR_LEATHER_DRAGON@3",
+    "name": "5.3 Dragonslayer Jacket",
+    "category": "chest"
+  },
+  {
+    "id": "T5_ARMOR_LEATHER_DRAGON@4",
+    "name": "5.4 Dragonslayer Jacket",
+    "category": "chest"
+  },
+  {
+    "id": "T6_ARMOR_LEATHER_DRAGON",
+    "name": "6.0 Dragonslayer Jacket",
+    "category": "chest"
+  },
+  {
+    "id": "T6_ARMOR_LEATHER_DRAGON@1",
+    "name": "6.1 Dragonslayer Jacket",
+    "category": "chest"
+  },
+  {
+    "id": "T6_ARMOR_LEATHER_DRAGON@2",
+    "name": "6.2 Dragonslayer Jacket",
+    "category": "chest"
+  },
+  {
+    "id": "T6_ARMOR_LEATHER_DRAGON@3",
+    "name": "6.3 Dragonslayer Jacket",
+    "category": "chest"
+  },
+  {
+    "id": "T6_ARMOR_LEATHER_DRAGON@4",
+    "name": "6.4 Dragonslayer Jacket",
+    "category": "chest"
+  },
+  {
+    "id": "T7_ARMOR_LEATHER_DRAGON",
+    "name": "7.0 Dragonslayer Jacket",
+    "category": "chest"
+  },
+  {
+    "id": "T7_ARMOR_LEATHER_DRAGON@1",
+    "name": "7.1 Dragonslayer Jacket",
+    "category": "chest"
+  },
+  {
+    "id": "T7_ARMOR_LEATHER_DRAGON@2",
+    "name": "7.2 Dragonslayer Jacket",
+    "category": "chest"
+  },
+  {
+    "id": "T7_ARMOR_LEATHER_DRAGON@3",
+    "name": "7.3 Dragonslayer Jacket",
+    "category": "chest"
+  },
+  {
+    "id": "T7_ARMOR_LEATHER_DRAGON@4",
+    "name": "7.4 Dragonslayer Jacket",
+    "category": "chest"
+  },
+  {
+    "id": "T8_ARMOR_LEATHER_DRAGON",
+    "name": "8.0 Dragonslayer Jacket",
+    "category": "chest"
+  },
+  {
+    "id": "T8_ARMOR_LEATHER_DRAGON@1",
+    "name": "8.1 Dragonslayer Jacket",
+    "category": "chest"
+  },
+  {
+    "id": "T8_ARMOR_LEATHER_DRAGON@2",
+    "name": "8.2 Dragonslayer Jacket",
+    "category": "chest"
+  },
+  {
+    "id": "T8_ARMOR_LEATHER_DRAGON@3",
+    "name": "8.3 Dragonslayer Jacket",
+    "category": "chest"
+  },
+  {
+    "id": "T8_ARMOR_LEATHER_DRAGON@@4",
+    "name": "8.4 Dragonslayer Jacket",
+    "category": "chest"
+  },
+  {
     "id": "T4_CAPE",
     "name": "4.0 Cape",
     "category": "cape"
@@ -22747,6 +22872,131 @@
   {
     "id": "T8_HEAD_PLATE_UNDEAD@4",
     "name": "8.4 Graveguard Helmet",
+    "category": "head"
+  },
+  {
+    "id": "T4_HEAD_LEATHER_DRAGON",
+    "name": "4.0 Dragonslayer Hood",
+    "category": "head"
+  },
+  {
+    "id": "T4_HEAD_LEATHER_DRAGON@1",
+    "name": "4.1 Dragonslayer Hood",
+    "category": "head"
+  },
+  {
+    "id": "T4_HEAD_LEATHER_DRAGON@2",
+    "name": "4.2 Dragonslayer Hood",
+    "category": "head"
+  },
+  {
+    "id": "T4_HEAD_LEATHER_DRAGON@3",
+    "name": "4.3 Dragonslayer Hood",
+    "category": "head"
+  },
+  {
+    "id": "T4_HEAD_LEATHER_DRAGON@4",
+    "name": "4.4 Dragonslayer Hood",
+    "category": "head"
+  },
+  {
+    "id": "T5_HEAD_LEATHER_DRAGON",
+    "name": "5.0 Dragonslayer Hood",
+    "category": "head"
+  },
+  {
+    "id": "T5_HEAD_LEATHER_DRAGON@1",
+    "name": "5.1 Dragonslayer Hood",
+    "category": "head"
+  },
+  {
+    "id": "T5_HEAD_LEATHER_DRAGON@2",
+    "name": "5.2 Dragonslayer Hood",
+    "category": "head"
+  },
+  {
+    "id": "T5_HEAD_LEATHER_DRAGON@3",
+    "name": "5.3 Dragonslayer Hood",
+    "category": "head"
+  },
+  {
+    "id": "T5_HEAD_LEATHER_DRAGON@4",
+    "name": "5.4 Dragonslayer Hood",
+    "category": "head"
+  },
+  {
+    "id": "T6_HEAD_LEATHER_DRAGON",
+    "name": "6.0 Dragonslayer Hood",
+    "category": "head"
+  },
+  {
+    "id": "T6_HEAD_LEATHER_DRAGON@1",
+    "name": "6.1 Dragonslayer Hood",
+    "category": "head"
+  },
+  {
+    "id": "T6_HEAD_LEATHER_DRAGON@2",
+    "name": "6.2 Dragonslayer Hood",
+    "category": "head"
+  },
+  {
+    "id": "T6_HEAD_LEATHER_DRAGON@3",
+    "name": "6.3 Dragonslayer Hood",
+    "category": "head"
+  },
+  {
+    "id": "T6_HEAD_LEATHER_DRAGON@4",
+    "name": "6.4 Dragonslayer Hood",
+    "category": "head"
+  },
+  {
+    "id": "T7_HEAD_LEATHER_DRAGON",
+    "name": "7.0 Dragonslayer Hood",
+    "category": "head"
+  },
+  {
+    "id": "T7_HEAD_LEATHER_DRAGON@1",
+    "name": "7.1 Dragonslayer Hood",
+    "category": "head"
+  },
+  {
+    "id": "T7_HEAD_LEATHER_DRAGON@2",
+    "name": "7.2 Dragonslayer Hood",
+    "category": "head"
+  },
+  {
+    "id": "T7_HEAD_LEATHER_DRAGON@3",
+    "name": "7.3 Dragonslayer Hood",
+    "category": "head"
+  },
+  {
+    "id": "T7_HEAD_LEATHER_DRAGON@4",
+    "name": "7.4 Dragonslayer Hood",
+    "category": "head"
+  },
+  {
+    "id": "T8_HEAD_LEATHER_DRAGON",
+    "name": "8.0 Dragonslayer Hood",
+    "category": "head"
+  },
+  {
+    "id": "T8_HEAD_LEATHER_DRAGON@1",
+    "name": "8.1 Dragonslayer Hood",
+    "category": "head"
+  },
+  {
+    "id": "T8_HEAD_LEATHER_DRAGON@2",
+    "name": "8.2 Dragonslayer Hood",
+    "category": "head"
+  },
+  {
+    "id": "T8_HEAD_LEATHER_DRAGON@3",
+    "name": "8.3 Dragonslayer Hood",
+    "category": "head"
+  },
+  {
+    "id": "T8_HEAD_LEATHER_DRAGON@4",
+    "name": "8.4 Dragonslayer Hood",
     "category": "head"
   },
   {
@@ -33499,16 +33749,141 @@
     "name": "8.4 Graveguard Boots",
     "category": "shoes"
   },
+  {
+    "id": "T4_SHOES_LEATHER_DRAGON",
+    "name": "4.0 Dragonslayer Shoes",
+    "category": "shoes"
+  },
+  {
+    "id": "T4_SHOES_LEATHER_DRAGON@1",
+    "name": "4.1 Dragonslayer Shoes",
+    "category": "shoes"
+  },
+  {
+    "id": "T4_SHOES_LEATHER_DRAGON@2",
+    "name": "4.2 Dragonslayer Shoes",
+    "category": "shoes"
+  },
+  {
+    "id": "T4_SHOES_LEATHER_DRAGON@3",
+    "name": "4.3 Dragonslayer Shoes",
+    "category": "shoes"
+  },
+  {
+    "id": "T4_SHOES_LEATHER_DRAGON@4",
+    "name": "4.4 Dragonslayer Shoes",
+    "category": "shoes"
+  },
+  {
+    "id": "T5_SHOES_LEATHER_DRAGON",
+    "name": "5.0 Dragonslayer Shoes",
+    "category": "shoes"
+  },
+  {
+    "id": "T5_SHOES_LEATHER_DRAGON@1",
+    "name": "5.1 Dragonslayer Shoes",
+    "category": "shoes"
+  },
+  {
+    "id": "T5_SHOES_LEATHER_DRAGON@2",
+    "name": "5.2 Dragonslayer Shoes",
+    "category": "shoes"
+  },
+  {
+    "id": "T5_SHOES_LEATHER_DRAGON@3",
+    "name": "5.3 Dragonslayer Shoes",
+    "category": "shoes"
+  },
+  {
+    "id": "T5_SHOES_LEATHER_DRAGON@4",
+    "name": "5.4 Dragonslayer Shoes",
+    "category": "shoes"
+  },
+  {
+    "id": "T6_SHOES_LEATHER_DRAGON",
+    "name": "6.0 Dragonslayer Shoes",
+    "category": "shoes"
+  },
+  {
+    "id": "T6_SHOES_LEATHER_DRAGON@1",
+    "name": "6.1 Dragonslayer Shoes",
+    "category": "shoes"
+  },
+  {
+    "id": "T6_SHOES_LEATHER_DRAGON@2",
+    "name": "6.2 Dragonslayer Shoes",
+    "category": "shoes"
+  },
+  {
+    "id": "T6_SHOES_LEATHER_DRAGON@3",
+    "name": "6.3 Dragonslayer Shoes",
+    "category": "shoes"
+  },
+  {
+    "id": "T6_SHOES_LEATHER_DRAGON@4",
+    "name": "6.4 Dragonslayer Shoes",
+    "category": "shoes"
+  },
+  {
+    "id": "T7_SHOES_LEATHER_DRAGON",
+    "name": "7.0 Dragonslayer Shoes",
+    "category": "shoes"
+  },
+  {
+    "id": "T7_SHOES_LEATHER_DRAGON@1",
+    "name": "7.1 Dragonslayer Shoes",
+    "category": "shoes"
+  },
+  {
+    "id": "T7_SHOES_LEATHER_DRAGON@2",
+    "name": "7.2 Dragonslayer Shoes",
+    "category": "shoes"
+  },
+  {
+    "id": "T7_SHOES_LEATHER_DRAGON@3",
+    "name": "7.3 Dragonslayer Shoes",
+    "category": "shoes"
+  },
+  {
+    "id": "T7_SHOES_LEATHER_DRAGON@4",
+    "name": "7.4 Dragonslayer Shoes",
+    "category": "shoes"
+  },
+  {
+    "id": "T8_SHOES_LEATHER_DRAGON",
+    "name": "8.0 Dragonslayer Shoes",
+    "category": "shoes"
+  },
+  {
+    "id": "T8_SHOES_LEATHER_DRAGON@1",
+    "name": "8.1 Dragonslayer Shoes",
+    "category": "shoes"
+  },
+  {
+    "id": "T8_SHOES_LEATHER_DRAGON@2",
+    "name": "8.2 Dragonslayer Shoes",
+    "category": "shoes"
+  },
+  {
+    "id": "T8_SHOES_LEATHER_DRAGON@3",
+    "name": "8.3 Dragonslayer Shoes",
+    "category": "shoes"
+  },
+  {
+    "id": "T8_SHOES_LEATHER_DRAGON@4",
+    "name": "8.4 Dragonslayer Shoes",
+    "category": "shoes"
+  },
   { "id": "T8_MEAL_STEW", "name": "8.0 Beef Stew", "category": "food" },
   { "id": "T8_MEAL_STEW@1", "name": "8.1 Beef Stew", "category": "food" },
   { "id": "T8_MEAL_STEW@2", "name": "8.2 Beef Stew", "category": "food" },
   { "id": "T8_MEAL_STEW@3", "name": "8.3 Beef Stew", "category": "food" },
-
+  
   { "id": "T8_MEAL_STEW_FISH", "name": "8.0 Eel Stew", "category": "food" },
   { "id": "T8_MEAL_STEW_FISH@1", "name": "8.1 Eel Stew", "category": "food" },
   { "id": "T8_MEAL_STEW_FISH@2", "name": "8.2 Eel Stew", "category": "food" },
   { "id": "T8_MEAL_STEW_FISH@3", "name": "8.3 Eel Stew", "category": "food" },
-
+  
   { "id": "T8_MEAL_SANDWICH", "name": "8.0 Beef Sandwich", "category": "food" },
   { "id": "T8_MEAL_SANDWICH@1", "name": "8.1 Beef Sandwich", "category": "food" },
   { "id": "T8_MEAL_SANDWICH@2", "name": "8.2 Beef Sandwich", "category": "food" },
