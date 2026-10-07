@@ -35,6 +35,8 @@ export class BuildCard {
   @Input() hideUI = false;
   @Input() isFirst = false;
   @Input() isLast = false;
+  /** When true, the first main-hand slot loads eagerly as the page LCP image. */
+  @Input() eager = false;
 
   @Output() deleteRequest = new EventEmitter<void>();
   @Output() duplicateRequest = new EventEmitter<void>();

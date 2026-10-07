@@ -30,7 +30,7 @@
   }
 
   <div class="card-grid">
-    @for (entry of filtered; track entry.id) {
+    @for (entry of filtered; track entry.id; let ei = $index) {
       @let icons = gearIcons(entry.build);
       <div class="build-card">
         <div class="card-top">
@@ -56,13 +56,14 @@
         }
 
         <div class="gear-preview">
-          @for (gear of icons; track gear.id) {
+          @for (gear of icons; track gear.id; let gi = $index) {
             <div class="gear-icon">
               <img
                 [src]="gearData.getImageUrl(gear.id, 64)"
                 [title]="gear.name"
                 [alt]="gear.name"
-                loading="lazy"
+                [attr.loading]="ei === 0 && gi === 0 ? 'eager' : 'lazy'"
+                [attr.fetchpriority]="ei === 0 && gi === 0 ? 'high' : null"
                 decoding="async"
               />
             </div>
@@ -106,7 +107,7 @@
     <div class="modal-content small-modal" (click)="$event.stopPropagation()">
       <div class="modal-header">
         <h3>Select Target Destination</h3>
-        <button class="close-btn" (click)="closeTargetModal()">X</button>
+        <button class="close-btn" (click)="closeTargetModal()" aria-label="Close target picker">X</button>
       </div>
       <p style="margin-top: 0; color: #a1a1aa">
         Where do you want to insert '{{ pendingSaved?.name }}'?

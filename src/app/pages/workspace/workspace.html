@@ -32,7 +32,7 @@
     </div>
   }
 
-  @for (collection of workspace.collections; track collection.id) {
+  @for (collection of workspace.collections; track collection.id; let ci = $index) {
     @if (!uiState.hideUI || collection.isVisibleInViewMode) {
       <div class="collection-container" [class.zen-mode]="uiState.hideUI">
         @if (!uiState.hideUI) {
@@ -85,6 +85,7 @@
               [hideUI]="uiState.hideUI"
               [isFirst]="i === 0"
               [isLast]="i === collection.builds.length - 1"
+              [eager]="ci === 0 && i === 0"
               (deleteRequest)="deleteBuild(collection.id, build.id)"
               (duplicateRequest)="openTargetSelector(build, 'duplicate')"
               (moveUp)="moveBuild(collection.id, build.id, -1)"
@@ -104,7 +105,7 @@
     <div class="modal-content" (click)="$event.stopPropagation()">
       <div class="modal-header">
         <h3>🗑️ Trashed Builds</h3>
-        <button class="close-btn" (click)="isTrashModalOpen = false">X</button>
+        <button class="close-btn" (click)="isTrashModalOpen = false" aria-label="Close trash dialog">X</button>
       </div>
       <div class="trash-list">
         @for (tb of workspace.trashedBuilds; track tb.id) {
@@ -126,7 +127,7 @@
     <div class="modal-content small-modal" (click)="$event.stopPropagation()">
       <div class="modal-header">
         <h3>Select Target Destination</h3>
-        <button class="close-btn" (click)="closeTargetModal()">X</button>
+        <button class="close-btn" (click)="closeTargetModal()" aria-label="Close target picker">X</button>
       </div>
       <p style="margin-top: 0; color: #a1a1aa">
         Where do you want to send '{{ pendingBuild?.title }}'?

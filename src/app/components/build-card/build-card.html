@@ -50,7 +50,7 @@
     </div>
 
     <div class="gear-row">
-      @for (slot of slots; track slot.key) {
+      @for (slot of slots; track slot.key; let i = $index) {
         @let item = itemFor(slot);
         @let slotSwaps = swapsFor(slot);
         <div class="gear-slot main" (click)="openSelector(slot.key)" [class.empty]="!item">
@@ -59,7 +59,8 @@
               [src]="gearData.getImageUrl(item.id, 128)"
               [title]="item.name"
               [alt]="item.name"
-              loading="lazy"
+              [attr.loading]="eager && i === 0 ? 'eager' : 'lazy'"
+              [attr.fetchpriority]="eager && i === 0 ? 'high' : null"
               decoding="async"
             />
             @if (preferences.showTierLabels) {

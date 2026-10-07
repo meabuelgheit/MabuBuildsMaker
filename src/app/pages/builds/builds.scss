@@ -30,7 +30,8 @@
   .rename-input {
     background: #09090b; border: 1px solid #d4af37; color: #e2e8f0;
     padding: 4px 8px; border-radius: 4px; font-size: 1rem; width: 100%;
-    &:focus { outline: none; }
+    /* Visible focus ring for both mouse and keyboard (border alone is permanent). */
+    &:focus { outline: 2px solid #fde047; outline-offset: 2px; }
   }
 
   .tier-badge {

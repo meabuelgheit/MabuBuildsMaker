@@ -10,7 +10,7 @@
             <span>Select Tier: {{ selectedGroup?.name }}</span>
           }
         </h3>
-        <button class="close-btn" (click)="closeModal()">X</button>
+        <button class="close-btn" (click)="closeModal()" aria-label="Close item selector">X</button>
       </div>
 
       @if (step === 'base') {

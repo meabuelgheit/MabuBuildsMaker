@@ -1,4 +1,9 @@
-<button class="toggle-ui-btn" (click)="uiState.toggle()" title="Toggle UI">
+<button
+  class="toggle-ui-btn"
+  (click)="uiState.toggle()"
+  title="Toggle UI"
+  [attr.aria-label]="uiState.hideUI ? 'Show interface' : 'Hide interface'"
+>
   {{ uiState.hideUI ? '+' : '−' }}
 </button>
 
