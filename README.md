@@ -36,6 +36,10 @@ ng build
 
 This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
 
+## Deployment
+
+The site is served by GitHub Pages from the `main` branch `/docs` folder. To deploy, run `npm install` then `npm run build:pages`, commit the regenerated `docs/` directory, and push to `main`. The `build:pages` script cleans `docs/` first (via `deleteOutputPath`), so no stale hashed bundles accumulate.
+
 ## Running unit tests
 
 To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
