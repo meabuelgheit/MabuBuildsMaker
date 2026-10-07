@@ -4,6 +4,11 @@
   font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
 }
 
+/* Landmark wrapper; keeps the routed page stretching exactly as before. */
+main {
+  display: flex; flex-direction: column; flex: 1; min-height: 0;
+}
+
 .toolbar-wrapper {
   position: fixed; top: 0; left: 0; width: 100%; padding: 16px;
   z-index: 50; display: flex; justify-content: center; pointer-events: none; box-sizing: border-box;
