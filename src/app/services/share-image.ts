@@ -742,7 +742,7 @@ export class ShareImageService {
     const chipH = 22;
     const gap = 6;
     ctx.font = '700 13px Inter, sans-serif';
-    // Centre the chip stack vertically on the icon band.
+    // Centre the chip stack vertically within the row band (y .. y + maxH).
     const total = chips.length * chipH + Math.max(0, chips.length - 1) * gap;
     let cy = y + Math.max(0, (maxH - total) / 2);
     for (const chip of chips) {
