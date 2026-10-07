@@ -14,7 +14,7 @@
       <div class="pref-row">
         <label class="pref-label" [for]="'tier-pref-' + slot.key">{{ slot.label }}</label>
         <select
-          class="pref-select"
+          class="pref-select select"
           [id]="'tier-pref-' + slot.key"
           [name]="'tier-pref-' + slot.key"
           [ngModel]="preferences.tierPreferences[slot.key]"
@@ -40,7 +40,7 @@
       <select
         id="buildsPerColumn"
         name="buildsPerColumn"
-        class="pref-select"
+        class="pref-select select"
         [ngModel]="preferences.buildsPerColumn"
         (ngModelChange)="preferences.setBuildsPerColumn($event)"
       >

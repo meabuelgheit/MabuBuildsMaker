@@ -8,7 +8,6 @@
   pointer-events: auto;
   padding: 10px 18px; border-radius: 6px; font-size: 0.9rem; font-weight: 600;
   color: #e2e8f0; background: #18181b; border: 1px solid #3f3f46;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.8);
   animation: toast-in 0.18s ease-out;
 
   &.success { border-color: #d4af37; color: #fde047; }

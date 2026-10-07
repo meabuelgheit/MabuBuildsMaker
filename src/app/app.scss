@@ -17,7 +17,7 @@ main {
 .toolbar {
   pointer-events: auto; display: flex; justify-content: space-between; align-items: center;
   background: rgba(18, 18, 20, 0.72); padding: 12px 24px; border-radius: 6px;
-  border: 1px solid #27272a; width: 100%; max-width: 1200px; box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+  border: 1px solid #27272a; width: 100%; max-width: 1200px;
   backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
 
   .project-title {

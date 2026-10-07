@@ -8,10 +8,7 @@
 .library-toolbar { width: 100%; max-width: 1200px; margin-bottom: 24px; }
 
 .search-bar {
-  width: 100%; padding: 12px 16px; background: #09090a;
-  border: 1px solid #27272a; color: #e2e8f0; border-radius: 4px; font-size: 1rem;
-  box-sizing: border-box;
-  &:focus { outline: none; border-color: #71717a; }
+  width: 100%; box-sizing: border-box;
   &::placeholder { color: #52525b; }
 }
 
@@ -28,9 +25,8 @@
   .saved-date { color: #71717a; font-size: 0.72rem; white-space: nowrap; }
 
   .rename-input {
-    background: #09090b; border: 1px solid #d4af37; color: #e2e8f0;
-    padding: 4px 8px; border-radius: 4px; font-size: 1rem; width: 100%;
-    /* Visible focus ring for both mouse and keyboard (border alone is permanent). */
+    border-color: #d4af37; width: 100%; font-size: 1rem;
+    /* Permanent gold border, so keep a distinct visible focus ring. */
     &:focus { outline: 2px solid #fde047; outline-offset: 2px; }
   }
 
@@ -41,7 +37,7 @@
 
   .gear-preview { display: flex; flex-wrap: wrap; gap: 6px; align-items: center;
     .gear-icon { width: 44px; height: 44px; display: flex; justify-content: center; align-items: center;
-      img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 2px 3px rgba(0,0,0,0.6)); }
+      img { width: 100%; height: 100%; object-fit: contain; }
     }
     .no-gear { color: #52525b; font-size: 0.8rem; }
   }

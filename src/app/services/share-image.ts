@@ -33,15 +33,43 @@ const GOLD = '#d4af37';
 const TEXT = '#e2e8f0';
 const MUTED = '#a1a1aa';
 const BORDER = '#27272a';
+const CRIMSON_FILL = '#9f1239';
+const CRIMSON_BORDER = '#be123c';
 const ICON_REQUEST_PX = 217;
-const COLLECTION_ICON_PX = 128;
+/** Collection icons are drawn at 96 px; 168 px is a ~1.75x request. */
+const COLLECTION_ICON_PX = 168;
 /** Maximum cached icon bitmaps; oldest unpinned entries are evicted (and closed). */
 const CACHE_LIMIT = 200;
+/** Shared geometry for the collection (zen-style) card. */
+const COL_PAD = 48;
+const COL_STATUS_W = 120;
+const COL_ICON_GAP = 8;
+const COL_GAP = 32;
+const COL_WIDTH_CAP = 2600;
+const COL_HEADER_H = 150;
+const COL_FOOTER_H = 70;
 
 /** Maps each visible slot to its single-item field and swap bucket. */
 interface SlotSpec {
   field: keyof PlayerBuild;
   swap: keyof BuildSwap;
+}
+
+/** Computed layout for a collection card. */
+interface CollectionLayout {
+  width: number;
+  height: number;
+  columns: number;
+  perColumn: number;
+  rowsUsed: number;
+  iconSize: number;
+  swapSize: number;
+  statusW: number;
+  iconGap: number;
+  colW: number;
+  colGap: number;
+  headerH: number;
+  rowH: number;
 }
 
 /**
@@ -75,6 +103,7 @@ export class ShareImageService {
   async renderBuild(build: PlayerBuild, opts?: ShareBuildOptions): Promise<ShareResult> {
     this.beginRender();
     await this.loadFonts();
+    const background = await this.loadBackground();
     const width = 1200;
     const height = 630;
     const items = this.collectItems(build);
@@ -82,8 +111,7 @@ export class ShareImageService {
     try {
       const canvas = this.createCanvas(width, height);
       const ctx = canvas.getContext('2d')!;
-      ctx.fillStyle = PANEL;
-      ctx.fillRect(0, 0, width, height);
+      this.drawBackground(ctx, width, height, background);
       this.drawBuildCard(ctx, build, opts?.subtitle, width, height, this.preferences.showTierLabels);
       const blob = await this.toBlob(canvas);
       return { blob, width, height, missingIcons: this.missingIcons };
@@ -92,18 +120,55 @@ export class ShareImageService {
     }
   }
 
-  /** Renders a collection card (1200 wide, dynamic height). */
+  /** Renders a collection card mirroring the app's zen (view) mode. */
   async renderCollection(collection: BuildCollection): Promise<ShareResult> {
     this.beginRender();
     await this.loadFonts();
-    const width = 1200;
+    const background = await this.loadBackground();
+
     const builds = collection.builds;
-    const twoCols = builds.length > 10;
-    const rowH = 168;
-    const rows = twoCols ? Math.ceil(builds.length / 2) : builds.length;
-    const headerH = 150;
-    const footerH = 70;
-    const height = Math.min(headerH + rows * rowH + footerH, 2600);
+    const perColumn =
+      this.preferences.buildsPerColumn ?? (collection.type === 'party' ? 10 : 6);
+    const columns = builds.length ? Math.ceil(builds.length / perColumn) : 1;
+    const rowsUsed = builds.length ? Math.min(perColumn, builds.length) : 0;
+
+    // Widen the canvas to keep big icons; only shrink icons past the width cap.
+    const iconGap = COL_ICON_GAP;
+    let iconSize = 96;
+    const swapSize = 48;
+    const measureCol = (icon: number) =>
+      COL_STATUS_W + this.slots.length * icon + (this.slots.length - 1) * iconGap;
+    let colW = measureCol(iconSize);
+    let width = Math.max(1200, 2 * COL_PAD + columns * colW + (columns - 1) * COL_GAP);
+    if (width > COL_WIDTH_CAP) {
+      const avail =
+        COL_WIDTH_CAP -
+        2 * COL_PAD -
+        (columns - 1) * COL_GAP -
+        columns * COL_STATUS_W -
+        columns * (this.slots.length - 1) * iconGap;
+      iconSize = Math.max(32, Math.floor(avail / (columns * this.slots.length)));
+      colW = measureCol(iconSize);
+      width = Math.max(1200, 2 * COL_PAD + columns * colW + (columns - 1) * COL_GAP);
+    }
+
+    const rowH = iconSize + 44;
+    const height = COL_HEADER_H + rowsUsed * rowH + COL_FOOTER_H;
+    const layout: CollectionLayout = {
+      width,
+      height,
+      columns,
+      perColumn,
+      rowsUsed,
+      iconSize,
+      swapSize,
+      statusW: COL_STATUS_W,
+      iconGap,
+      colW,
+      colGap: COL_GAP,
+      headerH: COL_HEADER_H,
+      rowH,
+    };
 
     const items: GearItem[] = [];
     for (const b of builds) items.push(...this.collectItems(b));
@@ -112,9 +177,8 @@ export class ShareImageService {
     try {
       const canvas = this.createCanvas(width, height);
       const ctx = canvas.getContext('2d')!;
-      ctx.fillStyle = PANEL;
-      ctx.fillRect(0, 0, width, height);
-      this.drawCollectionCard(ctx, collection, width, height, rowH, headerH, twoCols, this.preferences.showTierLabels);
+      this.drawBackground(ctx, width, height, background);
+      this.drawCollectionCard(ctx, collection, layout, this.preferences.showTierLabels);
       const blob = await this.toBlob(canvas);
       return { blob, width, height, missingIcons: this.missingIcons };
     } finally {
@@ -141,6 +205,47 @@ export class ShareImageService {
     return items;
   }
 
+  /** Loads the active background image (preference data URL, else the default). */
+  private loadBackground(): Promise<CanvasImageSource | null> {
+    if (typeof document === 'undefined' || typeof Image === 'undefined') {
+      return Promise.resolve(null);
+    }
+    const src = this.preferences.backgroundImage ?? 'Background.jpg';
+    return new Promise<CanvasImageSource | null>((resolve) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = () => resolve(null);
+      img.src = src;
+    });
+  }
+
+  /** Cover-fits the background and applies the app's flat 0.75 dark overlay. */
+  private drawBackground(
+    ctx: CanvasRenderingContext2D,
+    width: number,
+    height: number,
+    image: CanvasImageSource | null,
+  ): void {
+    if (!image) {
+      ctx.fillStyle = PANEL;
+      ctx.fillRect(0, 0, width, height);
+      return;
+    }
+    const iw = (image as HTMLImageElement).naturalWidth || (image as HTMLImageElement).width;
+    const ih = (image as HTMLImageElement).naturalHeight || (image as HTMLImageElement).height;
+    if (!iw || !ih) {
+      ctx.fillStyle = PANEL;
+      ctx.fillRect(0, 0, width, height);
+      return;
+    }
+    const scale = Math.max(width / iw, height / ih);
+    const dw = iw * scale;
+    const dh = ih * scale;
+    ctx.drawImage(image, (width - dw) / 2, (height - dh) / 2, dw, dh);
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.75)';
+    ctx.fillRect(0, 0, width, height);
+  }
+
   private drawBuildCard(
     ctx: CanvasRenderingContext2D,
     build: PlayerBuild,
@@ -158,17 +263,29 @@ export class ShareImageService {
     this.roundRect(ctx, padX - 16, 24, 6, 132, 3);
     ctx.fill();
 
+    const hasTags = !!build.tags?.length;
+    const badgeReserve = (build.minTier ? 150 : 0) + (build.requiresApproval ? 180 : 0);
+    // Keep the title clear of the tags block (right ~45%).
+    let titleMax = width - padX * 2 - 20;
+    if (hasTags) {
+      titleMax = Math.min(titleMax, width * 0.55 - (padX + 8) - badgeReserve - 16);
+    }
+    titleMax = Math.max(140, titleMax);
+
     // Title
     ctx.fillStyle = TEXT;
     ctx.textBaseline = 'alphabetic';
     ctx.font = '700 46px Inter, sans-serif';
-    const title = this.truncate(ctx, build.title || 'Untitled', width - padX * 2 - 240);
+    const title = this.truncate(ctx, build.title || 'Untitled', titleMax);
     ctx.fillText(title, padX + 8, 96);
 
-    // Tier badge next to title
+    // Tier + approval badges next to the title
     let cursor = padX + 8 + ctx.measureText(title).width + 18;
     if (build.minTier) {
-      cursor = this.drawBadge(ctx, build.minTier, cursor, 62);
+      cursor = this.drawPill(ctx, build.minTier, cursor, 62, GOLD, null, '#09090b');
+    }
+    if (build.requiresApproval) {
+      cursor = this.drawPill(ctx, 'Approval Only', cursor, 62, CRIMSON_FILL, CRIMSON_BORDER, '#ffffff');
     }
 
     // Subtitle
@@ -179,14 +296,13 @@ export class ShareImageService {
     }
 
     // Tags: bounded to the right ~45% of the card so they never run into the title.
-    if (build.tags?.length) {
+    if (hasTags) {
       ctx.font = '600 16px Inter, sans-serif';
       const tagGap = 8;
       const tagRight = width - padX;
       const maxTagWidth = width * 0.45;
       const areaLeft = tagRight - maxTagWidth;
-      const tags = build.tags;
-      // Pass 1: pick the trailing tags that fit (drawn right-to-left).
+      const tags = build.tags!;
       const fits: { text: string; tw: number }[] = [];
       let used = 0;
       for (let i = tags.length - 1; i >= 0; i--) {
@@ -202,7 +318,6 @@ export class ShareImageService {
         used += add;
       }
       const dropped = tags.length - fits.length;
-      // Pass 2: draw the fitted chips right-to-left.
       let tagX = tagRight;
       for (const fit of fits) {
         const left = tagX - fit.tw;
@@ -213,7 +328,6 @@ export class ShareImageService {
         ctx.fillText(fit.text, left + 12, 90);
         tagX = left - tagGap;
       }
-      // Optional overflow indicator for the dropped tags.
       if (dropped > 0) {
         const plusText = '+' + dropped;
         const plusW = ctx.measureText(plusText).width + 20;
@@ -227,12 +341,13 @@ export class ShareImageService {
       }
     }
 
-    // Slots row
+    // Slots row (enlarged icons)
     const slotGap = 8;
     const usable = width - 2 * padX;
     const slotW = (usable - slotGap * 6) / 7;
-    const iconSize = 104;
-    const slotTop = 210;
+    const iconSize = 132;
+    const swapSize = 56;
+    const slotTop = 196;
     for (let i = 0; i < this.slots.length; i++) {
       const slot = this.slots[i];
       const slotX = padX + i * (slotW + slotGap);
@@ -241,12 +356,11 @@ export class ShareImageService {
       this.drawTile(ctx, tileX, slotTop, iconSize, main, ICON_REQUEST_PX, 20, showTierLabels);
 
       const swaps = build.swaps?.[slot.swap] ?? [];
-      const smallSize = 42;
       let sx = tileX;
-      const sy = slotTop + iconSize + 36;
+      const sy = slotTop + iconSize + 34;
       for (const swap of swaps.slice(0, 3)) {
-        this.drawTile(ctx, sx, sy, smallSize, swap, ICON_REQUEST_PX, 12, showTierLabels);
-        sx += smallSize + 6;
+        this.drawTile(ctx, sx, sy, swapSize, swap, ICON_REQUEST_PX, 12, showTierLabels);
+        sx += swapSize + 6;
       }
     }
 
@@ -256,59 +370,50 @@ export class ShareImageService {
   private drawCollectionCard(
     ctx: CanvasRenderingContext2D,
     collection: BuildCollection,
-    width: number,
-    height: number,
-    rowH: number,
-    headerH: number,
-    twoCols: boolean,
+    layout: CollectionLayout,
     showTierLabels: boolean,
   ): void {
-    const padX = 48;
-    // Header
-    ctx.fillStyle = GOLD;
-    this.roundRect(ctx, padX - 16, 28, 6, 96, 3);
-    ctx.fill();
-    ctx.fillStyle = TEXT;
-    ctx.textBaseline = 'alphabetic';
-    ctx.font = '700 44px Inter, sans-serif';
-    ctx.fillText(this.truncate(ctx, collection.name || 'Untitled', width - padX * 2 - 120), padX + 8, 84);
-    ctx.fillStyle = MUTED;
-    ctx.font = '400 22px Inter, sans-serif';
-    const typeLabel = collection.type === 'party' ? 'Party' : 'Group';
-    ctx.fillText(`${typeLabel} · ${collection.builds.length} build(s)`, padX + 8, 122);
+    const { width, height, columns, perColumn, iconSize, swapSize, statusW, iconGap, colW, colGap, headerH, rowH } =
+      layout;
 
-    const colWidth = twoCols ? (width - padX * 2) / 2 : width - padX * 2;
-    const innerW = colWidth - 12;
-    const titleW = 200;
-    const iconAreaW = innerW - titleW - 24;
-    const step = iconAreaW / this.slots.length;
-    const iconSize = Math.min(56, step - 8);
+    // Header: centred gold, uppercase, letter-spaced collection name only.
+    ctx.textBaseline = 'alphabetic';
+    ctx.font = '700 48px Inter, sans-serif';
+    ctx.fillStyle = GOLD;
+    this.fillTextSpaced(ctx, (collection.name || 'Untitled').toUpperCase(), width / 2, 92, 3);
+    ctx.textAlign = 'left';
 
     collection.builds.forEach((build, idx) => {
-      const col = twoCols ? idx % 2 : 0;
-      const row = twoCols ? Math.floor(idx / 2) : idx;
-      const x0 = padX + col * colWidth;
-      const y0 = headerH + row * rowH;
+      const col = Math.floor(idx / perColumn);
+      const row = idx % perColumn;
+      const colX = COL_PAD + col * (colW + colGap);
+      const rowY = headerH + row * rowH;
 
-      this.roundRect(ctx, x0, y0 + 6, innerW, rowH - 16, 12);
-      ctx.fillStyle = PANEL_ALT;
+      // Row panel (zen tint).
+      this.roundRect(ctx, colX, rowY + 4, colW, rowH - 10, 10);
+      ctx.fillStyle = 'rgba(9, 9, 11, 0.64)';
       ctx.fill();
 
-      // Build title column (vertically centred)
-      ctx.fillStyle = TEXT;
-      ctx.font = '600 20px Inter, sans-serif';
-      const title = this.truncate(ctx, build.title || 'Untitled', titleW);
-      ctx.fillText(title, x0 + 16, y0 + rowH / 2 + 6);
+      // Status column (tags, tier, approval).
+      this.drawStatusColumn(ctx, build, colX + 10, rowY + 12, rowH - 20, statusW - 20);
 
-      // Icons row
-      const iconAreaX = x0 + titleW + 12;
-      const iy = y0 + 40;
+      // Icon row.
+      const iconTop = rowY + 8;
+      const iconAreaX = colX + statusW;
       for (let i = 0; i < this.slots.length; i++) {
         const slot = this.slots[i];
         const main = build[slot.field] as GearItem | null;
-        const ix = iconAreaX + i * step + Math.max(0, (step - iconSize) / 2);
+        const ix = iconAreaX + i * (iconSize + iconGap);
         if (main) {
-          this.drawTile(ctx, ix, iy, iconSize, main, COLLECTION_ICON_PX, 12, showTierLabels);
+          this.drawTile(ctx, ix, iconTop, iconSize, main, COLLECTION_ICON_PX, 14, showTierLabels);
+
+          // Swaps as small overlays on the bottom-right of the main icon.
+          const swaps = build.swaps?.[slot.swap] ?? [];
+          swaps.slice(0, 2).forEach((swap, j) => {
+            const sx = ix + iconSize - swapSize + j * 12;
+            const sy = iconTop + iconSize - swapSize + j * 12;
+            this.drawTile(ctx, sx, sy, swapSize, swap, COLLECTION_ICON_PX, 0, showTierLabels);
+          });
         }
       }
     });
@@ -362,20 +467,101 @@ export class ShareImageService {
     }
   }
 
-  private drawBadge(
+  /** Stacks a build's tags, tier requirement and approval chip on the left. */
+  private drawStatusColumn(
+    ctx: CanvasRenderingContext2D,
+    build: PlayerBuild,
+    x: number,
+    y: number,
+    maxH: number,
+    width: number,
+  ): void {
+    interface StatusChip {
+      text: string;
+      fill: string;
+      border: string | null;
+      color: string;
+    }
+    const chips: StatusChip[] = [];
+    for (const tag of build.tags ?? []) {
+      chips.push({ text: tag, fill: '#27272a', border: '#3f3f46', color: TEXT });
+    }
+    if (build.minTier) {
+      chips.push({ text: build.minTier, fill: GOLD, border: null, color: '#09090b' });
+    }
+    if (build.requiresApproval) {
+      chips.push({ text: 'Approval Only', fill: CRIMSON_FILL, border: CRIMSON_BORDER, color: '#ffffff' });
+    }
+
+    const chipH = 22;
+    const gap = 6;
+    ctx.font = '700 13px Inter, sans-serif';
+    let cy = y;
+    for (const chip of chips) {
+      if (cy + chipH > y + maxH) break;
+      let text = chip.text;
+      let tw = ctx.measureText(text).width + 16;
+      if (tw > width) {
+        text = this.truncate(ctx, chip.text, width - 16);
+        tw = ctx.measureText(text).width + 16;
+      }
+      this.roundRect(ctx, x, cy, tw, chipH, 4);
+      ctx.fillStyle = chip.fill;
+      ctx.fill();
+      if (chip.border) {
+        ctx.strokeStyle = chip.border;
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      }
+      ctx.fillStyle = chip.color;
+      ctx.fillText(text, x + 8, cy + 15);
+      cy += chipH + gap;
+    }
+  }
+
+  /** Draws a rounded inline pill and returns the cursor after it. */
+  private drawPill(
     ctx: CanvasRenderingContext2D,
     text: string,
     x: number,
     y: number,
+    fill: string,
+    border: string | null,
+    textColor: string,
   ): number {
     ctx.font = '700 20px Inter, sans-serif';
     const tw = ctx.measureText(text).width + 28;
     this.roundRect(ctx, x, y - 24, tw, 34, 17);
-    ctx.fillStyle = GOLD;
+    ctx.fillStyle = fill;
     ctx.fill();
-    ctx.fillStyle = '#09090b';
+    if (border) {
+      ctx.strokeStyle = border;
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    }
+    ctx.fillStyle = textColor;
     ctx.fillText(text, x + 14, y);
     return x + tw + 12;
+  }
+
+  /** Draws text centred at `centerX` with a fixed letter-spacing in px. */
+  private fillTextSpaced(
+    ctx: CanvasRenderingContext2D,
+    text: string,
+    centerX: number,
+    y: number,
+    spacing: number,
+  ): void {
+    const chars = Array.from(text);
+    const widths = chars.map((ch) => ctx.measureText(ch).width);
+    const total =
+      widths.reduce((sum, w) => sum + w, 0) + spacing * Math.max(0, chars.length - 1);
+    let x = centerX - total / 2;
+    ctx.textAlign = 'left';
+    for (let i = 0; i < chars.length; i++) {
+      ctx.fillText(chars[i], x, y);
+      x += widths[i] + spacing;
+    }
   }
 
   private drawFooter(ctx: CanvasRenderingContext2D, width: number, height: number): void {

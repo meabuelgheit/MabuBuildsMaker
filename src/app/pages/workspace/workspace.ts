@@ -138,6 +138,14 @@ export class WorkspacePage {
     }
   }
 
+  /** Permanently deletes a single trashed build after confirmation. */
+  deleteTrashedForever(buildId: string) {
+    if (confirm('Delete this build forever? This cannot be undone.')) {
+      this.workspace.deleteTrashedForever(buildId);
+      this.toast.show('Deleted forever.', 'info');
+    }
+  }
+
   /** Reorders a build within its collection and persists. */
   moveBuild(collectionId: string, buildId: string, direction: -1 | 1) {
     const collection = this.workspace.findCollection(collectionId);

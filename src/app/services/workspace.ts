@@ -169,6 +169,21 @@ export class WorkspaceService {
     this.persist();
   }
 
+  /** Permanently removes an active collection and any archived copy of it. */
+  deleteCollectionForever(id: string): void {
+    this.collections = this.collections.filter((c) => c.id !== id);
+    this.archivedCollections = this.archivedCollections.filter(
+      (a) => a.collection.id !== id,
+    );
+    this.persist();
+  }
+
+  /** Permanently removes a single build from the trash. */
+  deleteTrashedForever(buildId: string): void {
+    this.trashedBuilds = this.trashedBuilds.filter((b) => b.id !== buildId);
+    this.persist();
+  }
+
   /** Deep-clones a collection (active or archived) with fresh ids. */
   duplicateCollection(id: string): BuildCollection | null {
     const source =

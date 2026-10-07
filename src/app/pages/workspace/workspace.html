@@ -111,7 +111,10 @@
         @for (tb of workspace.trashedBuilds; track tb.id) {
           <div class="trash-item">
             <span class="trash-name">{{ tb.title }}</span>
-            <button class="btn-primary" (click)="openTargetSelector(tb, 'restore')">Restore</button>
+            <div class="trash-actions">
+              <button class="btn-primary" (click)="openTargetSelector(tb, 'restore')">Restore</button>
+              <button class="btn-danger" (click)="deleteTrashedForever(tb.id)">Delete forever</button>
+            </div>
           </div>
         }
         @if (workspace.trashedBuilds.length === 0) {

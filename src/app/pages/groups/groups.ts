@@ -46,6 +46,20 @@ export class GroupsPage {
     }
   }
 
+  /** Archives an active collection into the Archived section. */
+  archive(id: string) {
+    this.workspace.archiveCollection(id);
+    this.toast.show('Archived. Find it on the Groups page.');
+  }
+
+  /** Permanently deletes an active collection after confirmation. */
+  deleteActiveForever(id: string) {
+    if (confirm('Delete this group forever? This cannot be undone.')) {
+      this.workspace.deleteCollectionForever(id);
+      this.toast.show('Deleted forever.', 'info');
+    }
+  }
+
   /** True when the collection id belongs to the archive. */
   isArchived(id: string): boolean {
     return this.workspace.archivedCollections.some((a) => a.collection.id === id);

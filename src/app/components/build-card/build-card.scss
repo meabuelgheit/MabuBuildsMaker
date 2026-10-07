@@ -28,10 +28,8 @@ $bg-hover: rgba(255, 255, 255, 0.06);
   flex-shrink: 0; margin-right: 8px;
 
   .build-title-input {
-    background: #09090b; border: 1px solid #3f3f46; color: #e2e8f0;
-    padding: 4px 6px; border-radius: 4px; font-size: 0.8rem; font-weight: bold; width: 100%; box-sizing: border-box;
+    font-size: 0.8rem; font-weight: bold; width: 100%; box-sizing: border-box;
     margin-bottom: 4px;
-    &:focus { outline: none; border-color: #d4af37; }
   }
 
   .tags-container {
@@ -83,7 +81,7 @@ $bg-hover: rgba(255, 255, 255, 0.06);
     .zen-mode & { background-image: none; border-color: transparent; }
   }
   
-  img { width: 95%; height: 95%; object-fit: contain; z-index: 1; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.5)); } 
+  img { width: 95%; height: 95%; object-fit: contain; z-index: 1; } 
   .empty-text { color: #52525b; font-size: 0.65rem; font-weight: bold; text-transform: uppercase; text-align: center; }
 
   .slot-tier {
@@ -103,7 +101,6 @@ $bg-hover: rgba(255, 255, 255, 0.06);
     &:nth-child(1) { bottom: 0px; right: 0px; z-index: 11; }
     &:nth-child(2) { bottom: -14px; right: -14px; z-index: 12; }
 
-    img { filter: drop-shadow(0 1px 1px rgba(0,0,0,0.9)); }
 
     .remove-overlay {
       position: absolute; top: 0; left: 0; right: 0; bottom: 0;

@@ -34,6 +34,8 @@
           <div class="card-actions">
             <button class="btn-primary" (click)="open(collection)">Open</button>
             <button class="btn-secondary" (click)="duplicate(collection.id)">Duplicate</button>
+            <button class="btn-secondary" (click)="archive(collection.id)">Archive</button>
+            <button class="btn-danger" (click)="deleteActiveForever(collection.id)">Delete forever</button>
           </div>
         </div>
       }
