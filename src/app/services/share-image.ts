@@ -50,12 +50,32 @@ const COL_GAP = 32;
 const COL_WIDTH_CAP = 2600;
 const COL_HEADER_H = 150;
 const COL_FOOTER_H = 70;
+/** How far an alt tile hangs past the main corner, as a fraction of tile size. */
+const SWAP_OUTSET_RATIO = 0.12;
+/** Horizontal stagger between a pair of alt tiles. */
+const SWAP_STAGGER = 8;
+/** Single-build card geometry: a 3x3 grid of ~210 px tiles (min the bag/abilities). */
+const BUILD_PAD = 110;
+/** Tile target size; the render CDN caps item art at 217 px, so stay at/below it. */
+const BUILD_TILE = 210;
+const BUILD_GAP = 20;
+const BUILD_HEADER_TOP = 24;
+const BUILD_HEADER_H = 132;
+/** Top of the grid: below the header panel with a 16 px gap. */
+const BUILD_GRID_TOP = BUILD_HEADER_TOP + BUILD_HEADER_H + 16;
+const BUILD_FOOTER_H = 70;
 
 /** Maps each visible slot to its single-item field and swap bucket. */
 interface SlotSpec {
   field: keyof PlayerBuild;
   swap: keyof BuildSwap;
 }
+
+/**
+ * 3x3 cell order for the single-build card; each value indexes `slots`, null = empty cell.
+ * Rows: [- , head, weapon] / [cape, chest, -] / [potion, shoes, food].
+ */
+const BUILD_GRID: (number | null)[] = [null, 1, 0, 4, 2, null, 6, 3, 5];
 
 /** Computed layout for a collection card. */
 interface CollectionLayout {
@@ -103,13 +123,15 @@ export class ShareImageService {
     { field: 'potion', swap: 'potion' },
   ];
 
-  /** Renders a single build card (1200×630). */
+  /** Renders a single-build card: a 3x3 tile grid with hanging alt tiles. */
   async renderBuild(build: PlayerBuild, opts?: ShareBuildOptions): Promise<ShareResult> {
     this.beginRender();
     await this.loadFonts();
     const background = await this.loadBackground();
-    const width = 1200;
-    const height = 630;
+    // Size the card from the grid, leaving room for the alt overflow and footer.
+    const width = 2 * BUILD_PAD + 3 * BUILD_TILE + 2 * BUILD_GAP;
+    const altOverflow = Math.round(BUILD_TILE * SWAP_OUTSET_RATIO) + SWAP_STAGGER;
+    const height = BUILD_GRID_TOP + 3 * BUILD_TILE + 2 * BUILD_GAP + altOverflow + BUILD_FOOTER_H;
     const items = this.collectItems(build);
     const keys = await this.preload(items, ICON_REQUEST_PX);
     try {
@@ -146,13 +168,14 @@ export class ShareImageService {
     );
     // Status column is measured only when the card actually shows chips.
     const statusW = hasChips ? this.measureStatusWidth(builds) : 0;
-    // Alt tiles hang past the main corner; reserve that room (plus 2 px) in the column.
-    let outset = Math.round(iconSize * 0.12);
+    // Alt tiles hang past the main corner; reserve the outset + stagger (+ 2 px).
+    let outset = Math.round(iconSize * SWAP_OUTSET_RATIO);
     const measureCol = (icon: number) =>
       statusW +
       this.slots.length * icon +
       (this.slots.length - 1) * iconGap +
       outset +
+      SWAP_STAGGER +
       2;
     let colW = measureCol(iconSize);
     let width = Math.max(1200, 2 * COL_PAD + columns * colW + (columns - 1) * COL_GAP);
@@ -171,7 +194,7 @@ export class ShareImageService {
           ),
         ),
       );
-      outset = Math.round(iconSize * 0.12);
+      outset = Math.round(iconSize * SWAP_OUTSET_RATIO);
       colW = measureCol(iconSize);
       width = Math.max(1200, 2 * COL_PAD + columns * colW + (columns - 1) * COL_GAP);
     }
@@ -182,9 +205,9 @@ export class ShareImageService {
         (columns - 1) * COL_GAP -
         columns * statusW -
         columns * (this.slots.length - 1) * iconGap -
-        columns * (outset + 2);
+        columns * (outset + SWAP_STAGGER + 2);
       iconSize = Math.max(32, Math.floor(avail / (columns * this.slots.length)));
-      outset = Math.round(iconSize * 0.12);
+      outset = Math.round(iconSize * SWAP_OUTSET_RATIO);
       colW = measureCol(iconSize);
       width = Math.max(1200, 2 * COL_PAD + columns * colW + (columns - 1) * COL_GAP);
     }
@@ -441,26 +464,51 @@ export class ShareImageService {
       }
     }
 
-    // Slots row (enlarged icons)
-    const slotGap = 8;
-    const usable = width - 2 * padX;
-    const slotW = (usable - slotGap * 6) / 7;
-    const iconSize = 132;
-    const swapSize = 68;
-    const slotTop = 196;
-    for (let i = 0; i < this.slots.length; i++) {
-      const slot = this.slots[i];
-      const slotX = padX + i * (slotW + slotGap);
-      const tileX = slotX + (slotW - iconSize) / 2;
-      const main = build[slot.field] as GearItem | null;
-      this.drawTile(ctx, tileX, slotTop, iconSize, main, ICON_REQUEST_PX, 20, showTierLabels);
+    // 3x3 grid (mirrors the Albion build display, minus the bag and abilities).
+    const gridX = BUILD_PAD;
+    const gridTop = BUILD_GRID_TOP;
+    const tile = BUILD_TILE;
+    const gap = BUILD_GAP;
+    const swapSize = Math.round(tile * 0.5);
+    const outset = Math.round(tile * SWAP_OUTSET_RATIO);
 
-      const swaps = build.swaps?.[slot.swap] ?? [];
-      let sx = tileX;
-      const sy = slotTop + iconSize + 34;
-      for (const swap of swaps.slice(0, 3)) {
-        this.drawTile(ctx, sx, sy, swapSize, swap, ICON_REQUEST_PX, 12, showTierLabels);
-        sx += swapSize + 6;
+    // Pass 1: main tiles; the two unmapped grid cells are skipped entirely.
+    for (let r = 0; r < 3; r++) {
+      for (let c = 0; c < 3; c++) {
+        const idx = BUILD_GRID[r * 3 + c];
+        if (idx === null) continue;
+        const slot = this.slots[idx];
+        const main = build[slot.field] as GearItem | null;
+        this.drawTile(
+          ctx,
+          gridX + c * (tile + gap),
+          gridTop + r * (tile + gap),
+          tile,
+          main,
+          ICON_REQUEST_PX,
+          0,
+          showTierLabels,
+          'badge',
+        );
+      }
+    }
+
+    // Pass 2: alt tiles hang past each tile's bottom-right corner, layered on top.
+    for (let r = 0; r < 3; r++) {
+      for (let c = 0; c < 3; c++) {
+        const idx = BUILD_GRID[r * 3 + c];
+        if (idx === null) continue;
+        const slot = this.slots[idx];
+        const main = build[slot.field] as GearItem | null;
+        if (!main) continue;
+        const tx = gridX + c * (tile + gap);
+        const ty = gridTop + r * (tile + gap);
+        const swaps = build.swaps?.[slot.swap] ?? [];
+        swaps.slice(0, 2).forEach((swap, j) => {
+          const sx = tx + tile - swapSize + outset + j * SWAP_STAGGER;
+          const sy = ty + tile - swapSize + outset + j * SWAP_STAGGER;
+          this.drawTile(ctx, sx, sy, swapSize, swap, ICON_REQUEST_PX, 0, showTierLabels);
+        });
       }
     }
 
@@ -532,9 +580,9 @@ export class ShareImageService {
         const ix = iconAreaX + i * (iconSize + iconGap);
         const swaps = build.swaps?.[slot.swap] ?? [];
         swaps.slice(0, 2).forEach((swap, j) => {
-          // Outset (~12%) hangs the tile past the corner; 8 px staggers the pair.
-          const sx = ix + iconSize - swapSize + outset + j * 8;
-          const sy = iconTop + iconSize - swapSize + outset + j * 8;
+          // Outset (~12%) hangs the tile past the corner; stagger the pair.
+          const sx = ix + iconSize - swapSize + outset + j * SWAP_STAGGER;
+          const sy = iconTop + iconSize - swapSize + outset + j * SWAP_STAGGER;
           this.drawTile(ctx, sx, sy, swapSize, swap, COLLECTION_ICON_PX, 0, showTierLabels);
         });
       }
@@ -543,7 +591,7 @@ export class ShareImageService {
     this.drawFooter(ctx, width, height);
   }
 
-  /** Draws one tile: bitmap, placeholder, and tier label beneath. */
+  /** Draws one tile: bitmap, placeholder, and a tier label (below chip or corner badge). */
   private drawTile(
     ctx: CanvasRenderingContext2D,
     x: number,
@@ -553,6 +601,7 @@ export class ShareImageService {
     px: number,
     tierFont: number,
     showTierLabels: boolean,
+    tierStyle: 'below' | 'badge' = 'below',
   ): void {
     const bmp = item ? this.cache.get(`${item.id}@${px}`) ?? null : null;
 
@@ -580,24 +629,52 @@ export class ShareImageService {
       }
     }
 
-    // Tier label beneath, on a small dark chip so it stays legible over the artwork.
+    // Tier label: corner badge (single card) or beneath chip (collection card).
     // Only when the bitmap was drawn — placeholders keep their label inside the tile.
-    if (item && bmp && tierFont > 0 && showTierLabels) {
+    if (item && bmp && showTierLabels) {
       const label = tierLabel(item.name);
-      ctx.font = `700 ${tierFont}px Inter, sans-serif`;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'alphabetic';
-      const chipW = ctx.measureText(label).width + 8;
-      const chipH = tierFont + 4;
-      const cx = x + size / 2;
-      const cy = y + size + 3;
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.65)';
-      this.roundRect(ctx, cx - chipW / 2, cy, chipW, chipH, 4);
-      ctx.fill();
-      ctx.fillStyle = GOLD;
-      ctx.fillText(label, cx, cy + chipH - 4);
-      ctx.textAlign = 'left';
+      if (tierStyle === 'badge') {
+        this.drawTierBadge(ctx, label, x, y, size);
+      } else if (tierFont > 0) {
+        ctx.font = `700 ${tierFont}px Inter, sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'alphabetic';
+        const chipW = ctx.measureText(label).width + 8;
+        const chipH = tierFont + 4;
+        const cx = x + size / 2;
+        const cy = y + size + 3;
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.65)';
+        this.roundRect(ctx, cx - chipW / 2, cy, chipW, chipH, 4);
+        ctx.fill();
+        ctx.fillStyle = GOLD;
+        ctx.fillText(label, cx, cy + chipH - 4);
+        ctx.textAlign = 'left';
+      }
     }
+  }
+
+  /** Draws a small tier badge at the tile's top-left corner (single-build card). */
+  private drawTierBadge(
+    ctx: CanvasRenderingContext2D,
+    label: string,
+    x: number,
+    y: number,
+    size: number,
+  ): void {
+    const font = Math.max(11, Math.round(size * 0.085));
+    ctx.font = `700 ${font}px Inter, sans-serif`;
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'alphabetic';
+    const w = ctx.measureText(label).width + 12;
+    const h = font + 8;
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+    this.roundRect(ctx, x + 4, y + 4, w, h, 5);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(212, 175, 55, 0.55)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    ctx.fillStyle = GOLD;
+    ctx.fillText(label, x + 10, y + 4 + h - 5);
   }
 
   /** Stacks a build's tags, tier requirement and approval chip on the left. */
