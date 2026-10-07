@@ -26,6 +26,7 @@ export class WorkspacePage {
   isTargetModalOpen = false;
   targetAction: 'duplicate' | 'restore' | null = null;
   pendingBuild: PlayerBuild | null = null;
+  archivedConfirmation = false;
 
   private cdr = inject(ChangeDetectorRef);
 
@@ -42,9 +43,14 @@ export class WorkspacePage {
     this.workspace.touch();
   }
 
-  /** Archives a collection instead of destroying it. */
+  /** Archives a collection and briefly confirms where it went. */
   removeCollection(id: string) {
     this.workspace.archiveCollection(id);
+    this.archivedConfirmation = true;
+    setTimeout(() => {
+      this.archivedConfirmation = false;
+      this.cdr.markForCheck();
+    }, 3000);
   }
 
   /** Flips a collection's view-mode visibility and persists. */

@@ -22,6 +22,10 @@
     <button class="btn-primary" (click)="addCollection('group')">+ Make Group Builds</button>
   </div>
 
+  <p class="archive-confirmation" *ngIf="archivedConfirmation">
+    Archived. Find it on the Groups page.
+  </p>
+
   <div class="empty-state" *ngIf="workspace.collections.length === 0 && !uiState.hideUI">
     <h2>Welcome to Mabu Builds</h2>
     <p>Select an option above to start creating groups.</p>

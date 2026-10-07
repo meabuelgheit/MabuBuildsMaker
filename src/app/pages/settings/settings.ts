@@ -67,6 +67,7 @@ export class SettingsPage implements OnInit {
     reader.onload = () => this.processImage(reader.result as string);
     reader.onerror = () => {
       this.errorMessage = 'Could not read the image file.';
+      this.cdr.markForCheck();
     };
     reader.readAsDataURL(file);
     event.target.value = '';
@@ -100,6 +101,7 @@ export class SettingsPage implements OnInit {
         this.errorMessage =
           'The selected image is too large even after compression. Please choose a smaller image.';
         this.successMessage = '';
+        this.cdr.markForCheck();
         return;
       }
 
@@ -107,9 +109,11 @@ export class SettingsPage implements OnInit {
       this.preferences.applyBackground();
       this.errorMessage = '';
       this.successMessage = 'Background updated.';
+      this.cdr.markForCheck();
     };
     img.onerror = () => {
       this.errorMessage = 'Could not load the selected image.';
+      this.cdr.markForCheck();
     };
     img.src = dataUrl;
   }

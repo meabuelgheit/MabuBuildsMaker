@@ -64,7 +64,7 @@ export class WorkspaceService {
       ? state.collections.map((c) => upgradeCollection(c))
       : [];
     this.trashedBuilds = Array.isArray(state.trashedBuilds)
-      ? state.trashedBuilds
+      ? state.trashedBuilds.map((b) => upgradeBuild(b))
       : [];
 
     const archived = this.storage.read<ArchivedCollection[]>(
