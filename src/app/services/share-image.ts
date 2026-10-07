@@ -242,7 +242,11 @@ export class ShareImageService {
     const dw = iw * scale;
     const dh = ih * scale;
     ctx.drawImage(image, (width - dw) / 2, (height - dh) / 2, dw, dh);
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.75)';
+    // Mirror the app's body overlay: linear-gradient(rgba(0,0,0,.75), rgba(0,0,0,.75)).
+    const scrim = ctx.createLinearGradient(0, 0, 0, height);
+    scrim.addColorStop(0, 'rgba(0, 0, 0, 0.75)');
+    scrim.addColorStop(1, 'rgba(0, 0, 0, 0.75)');
+    ctx.fillStyle = scrim;
     ctx.fillRect(0, 0, width, height);
   }
 
@@ -263,12 +267,59 @@ export class ShareImageService {
     this.roundRect(ctx, padX - 16, 24, 6, 132, 3);
     ctx.fill();
 
-    const hasTags = !!build.tags?.length;
-    const badgeReserve = (build.minTier ? 150 : 0) + (build.requiresApproval ? 180 : 0);
-    // Keep the title clear of the tags block (right ~45%).
+    // --- Measure the tags block first so the title can claim the remaining space.
+    ctx.font = '600 16px Inter, sans-serif';
+    const tagGap = 8;
+    const tags = build.tags ?? [];
+    const tagRight = width - padX;
+    const maxTagWidth = width * 0.45;
+    const areaLeft = tagRight - maxTagWidth;
+    const tagFits: { text: string; tw: number }[] = [];
+    let tagsUsed = 0;
+    for (let i = tags.length - 1; i >= 0; i--) {
+      let text = tags[i];
+      let tw = ctx.measureText(text).width + 24;
+      if (tw > maxTagWidth) {
+        text = this.truncate(ctx, tags[i], maxTagWidth - 24);
+        tw = ctx.measureText(text).width + 24;
+      }
+      const add = tw + (tagFits.length ? tagGap : 0);
+      if (tagsUsed + add > maxTagWidth) break;
+      tagFits.push({ text, tw });
+      tagsUsed += add;
+    }
+    const dropped = tags.length - tagFits.length;
+    let plusWidth = 0;
+    if (dropped > 0) {
+      plusWidth = ctx.measureText('+' + dropped).width + 20 + tagGap;
+    }
+    const tagsLeft = tags.length ? tagRight - tagsUsed - plusWidth : tagRight;
+
+    // --- Measure the real badge widths (drawn right after the title).
+    ctx.font = '700 20px Inter, sans-serif';
+    const badgeGap = 12;
+    const badgeTexts: string[] = [];
+    if (build.minTier) badgeTexts.push(build.minTier);
+    if (build.requiresApproval) badgeTexts.push('Approval Only');
+    let badgeWidth = 0;
+    badgeTexts.forEach((text, i) => {
+      badgeWidth += ctx.measureText(text).width + 28 + (i > 0 ? badgeGap : 0);
+    });
+
+    // --- Title width from the measured tags + badges, with a small floor.
+    const titleStart = padX + 8;
+    const gapTitleBadges = 18;
+    const gapBeforeTags = 16;
     let titleMax = width - padX * 2 - 20;
-    if (hasTags) {
-      titleMax = Math.min(titleMax, width * 0.55 - (padX + 8) - badgeReserve - 16);
+    if (tags.length || badgeTexts.length) {
+      titleMax = Math.min(
+        titleMax,
+        tagsLeft -
+          titleStart -
+          badgeWidth -
+          (badgeTexts.length ? gapTitleBadges : 0) -
+          gapBeforeTags,
+      );
     }
     titleMax = Math.max(140, titleMax);
 
@@ -295,31 +346,11 @@ export class ShareImageService {
       ctx.fillText(this.truncate(ctx, subtitle, width - padX * 2 - 200), padX + 8, 126);
     }
 
-    // Tags: bounded to the right ~45% of the card so they never run into the title.
-    if (hasTags) {
+    // Tags: draw the fitted chips right-to-left.
+    if (tags.length) {
       ctx.font = '600 16px Inter, sans-serif';
-      const tagGap = 8;
-      const tagRight = width - padX;
-      const maxTagWidth = width * 0.45;
-      const areaLeft = tagRight - maxTagWidth;
-      const tags = build.tags!;
-      const fits: { text: string; tw: number }[] = [];
-      let used = 0;
-      for (let i = tags.length - 1; i >= 0; i--) {
-        let text = tags[i];
-        let tw = ctx.measureText(text).width + 24;
-        if (tw > maxTagWidth) {
-          text = this.truncate(ctx, tags[i], maxTagWidth - 24);
-          tw = ctx.measureText(text).width + 24;
-        }
-        const add = tw + (fits.length ? tagGap : 0);
-        if (used + add > maxTagWidth) break;
-        fits.push({ text, tw });
-        used += add;
-      }
-      const dropped = tags.length - fits.length;
       let tagX = tagRight;
-      for (const fit of fits) {
+      for (const fit of tagFits) {
         const left = tagX - fit.tw;
         this.roundRect(ctx, left, 70, fit.tw, 30, 15);
         ctx.fillStyle = '#27272a';
@@ -330,13 +361,13 @@ export class ShareImageService {
       }
       if (dropped > 0) {
         const plusText = '+' + dropped;
-        const plusW = ctx.measureText(plusText).width + 20;
-        if (tagX - plusW >= areaLeft) {
-          this.roundRect(ctx, tagX - plusW, 70, plusW, 30, 15);
+        const w = ctx.measureText(plusText).width + 20;
+        if (tagX - w >= areaLeft) {
+          this.roundRect(ctx, tagX - w, 70, w, 30, 15);
           ctx.fillStyle = '#3f3f46';
           ctx.fill();
           ctx.fillStyle = TEXT;
-          ctx.fillText(plusText, tagX - plusW + 10, 90);
+          ctx.fillText(plusText, tagX - w + 10, 90);
         }
       }
     }
@@ -621,6 +652,34 @@ export class ShareImageService {
         else reject(new Error('Canvas toBlob returned null'));
       }, 'image/png');
     });
+  }
+
+  /**
+   * Re-encodes a rendered PNG as a JPEG (downloads only) on a base-coloured canvas
+   * so no alpha artefacts appear. Browser-only; resolves null if encoding fails.
+   */
+  async toJpeg(blob: Blob, quality = 0.92): Promise<Blob | null> {
+    if (
+      typeof document === 'undefined' ||
+      typeof createImageBitmap === 'undefined'
+    ) {
+      return null;
+    }
+    try {
+      const bitmap = await createImageBitmap(blob);
+      const canvas = this.createCanvas(bitmap.width, bitmap.height);
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return null;
+      ctx.fillStyle = PANEL;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(bitmap, 0, 0);
+      bitmap.close();
+      return await new Promise<Blob | null>((resolve) => {
+        canvas.toBlob((out) => resolve(out), 'image/jpeg', quality);
+      });
+    } catch {
+      return null;
+    }
   }
 
   private async loadFonts(): Promise<void> {

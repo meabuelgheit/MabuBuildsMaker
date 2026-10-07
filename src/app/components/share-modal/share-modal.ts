@@ -129,13 +129,17 @@ export class ShareModal implements OnChanges {
     this.cdr.markForCheck();
   }
 
-  /** Downloads the rendered PNG. */
-  download(): void {
-    if (!this.rawUrl) return;
+  /** Downloads the rendered card as JPEG (falls back to the PNG on failure). */
+  async download(): Promise<void> {
+    if (!this.result) return;
+    const jpeg = await this.shareImage.toJpeg(this.result.blob).catch(() => null);
+    const blob = jpeg ?? this.result.blob;
+    const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = this.rawUrl;
-    a.download = this.fileName();
+    a.href = url;
+    a.download = this.fileName(jpeg ? 'jpg' : 'png');
     a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
 
   /** Copies the rendered PNG to the clipboard. */
@@ -186,7 +190,7 @@ export class ShareModal implements OnChanges {
     this.safeUrl = null;
   }
 
-  private fileName(): string {
+  private fileName(ext: 'png' | 'jpg' = 'png'): string {
     const req = this.request;
     const base =
       req?.kind === 'build'
@@ -200,6 +204,6 @@ export class ShareModal implements OnChanges {
         .replace(/[^a-z0-9]+/g, '-')
         .replace(/^-+|-+$/g, '')
         .slice(0, 60) || 'share';
-    return `mabu-${slug}.png`;
+    return `mabu-${slug}.${ext}`;
   }
 }

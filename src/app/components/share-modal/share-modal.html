@@ -16,7 +16,7 @@
       } @else if (state === 'done' && safeUrl) {
         <img class="share-preview" [src]="safeUrl" alt="Share image preview" />
         <div class="share-actions">
-          <button class="btn-primary" (click)="download()" aria-label="Download PNG">⬇ Download PNG</button>
+          <button class="btn-primary" (click)="download()" aria-label="Download JPG">⬇ Download JPG</button>
           @if (canCopy) {
             <button class="btn-secondary" (click)="copy()" aria-label="Copy image to clipboard">📋 Copy image</button>
           } @else {
