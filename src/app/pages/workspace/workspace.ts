@@ -1,4 +1,4 @@
-import { Component, ChangeDetectorRef, inject } from '@angular/core';
+import { Component, ChangeDetectorRef, inject, OnInit, OnDestroy } from '@angular/core';
 import { TitleCasePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { BuildCard } from '../../components/build-card/build-card';
@@ -9,6 +9,7 @@ import { UiStateService } from '../../services/ui-state';
 import { PreferencesService } from '../../services/preferences';
 import { LibraryService } from '../../services/library';
 import { ToastService } from '../../services/toast';
+import { ShareImageService } from '../../services/share-image';
 
 /**
  * Workspace page: creates collections, edits their builds and handles
@@ -21,7 +22,7 @@ import { ToastService } from '../../services/toast';
   templateUrl: './workspace.html',
   styleUrls: ['./workspace.scss'],
 })
-export class WorkspacePage {
+export class WorkspacePage implements OnInit, OnDestroy {
   workspace = inject(WorkspaceService);
   /** Shared zen-mode visibility flag drives hidden-view rendering. */
   uiState = inject(UiStateService);
@@ -40,6 +41,36 @@ export class WorkspacePage {
 
   private toast = inject(ToastService);
   private cdr = inject(ChangeDetectorRef);
+  /** Share renderer used for the best-effort icon prefetch on idle. */
+  private shareImage = inject(ShareImageService);
+  /** Cancels the deferred prefetch if the page is destroyed before it runs. */
+  private cancelIdle: (() => void) | null = null;
+
+  /** Schedules a best-effort icon prefetch once the browser goes idle. */
+  ngOnInit(): void {
+    if (typeof window === 'undefined') return;
+    const run = () => {
+      this.cancelIdle = null;
+      this.shareImage.prefetch(
+        this.workspace.collections
+          .filter((c) => c.isVisibleInViewMode)
+          .flatMap((c) => c.builds),
+      );
+    };
+    if (typeof window.requestIdleCallback === 'function') {
+      const handle = window.requestIdleCallback(run, { timeout: 4000 });
+      this.cancelIdle = () => window.cancelIdleCallback(handle);
+    } else {
+      const handle = window.setTimeout(run, 2000);
+      this.cancelIdle = () => window.clearTimeout(handle);
+    }
+  }
+
+  /** Cancels a pending prefetch so it cannot fire after the page is gone. */
+  ngOnDestroy(): void {
+    this.cancelIdle?.();
+    this.cancelIdle = null;
+  }
 
   /** Opens the share modal for a single build. */
   openShareBuild(build: PlayerBuild, subtitle?: string) {

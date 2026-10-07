@@ -43,8 +43,9 @@ const CACHE_LIMIT = 200;
 /** Shared geometry for the collection (zen-style) card. */
 const COL_PAD = 48;
 /** Bounds for the measured status/tags column width (px). */
-const COL_STATUS_MIN = 130;
 const COL_STATUS_MAX = 220;
+/** Horizontal padding added around a column's widest chip (10 px each side). */
+const COL_STRIP_PAD = 20;
 const COL_ICON_GAP = 8;
 const COL_GAP = 32;
 const COL_WIDTH_CAP = 2600;
@@ -181,16 +182,16 @@ export class ShareImageService {
       return this.measureColumnStrip(builds.slice(start, start + perColumn));
     });
     const anyChips = stripWidths.some((w) => w > 0);
-    // Alt tiles hang past the main corner; reserve the outset + stagger (+ 2 px).
+    // Alt tiles hang past the main corner; reserve the overhang symmetrically per column.
     let outset = Math.round(iconSize * SWAP_OUTSET_RATIO);
-    // Content width for a column: strip + icons + alt overflow.
-    const contentW = (c: number) =>
-      stripWidths[c] +
-      this.slots.length * iconSize +
-      (this.slots.length - 1) * iconGap +
-      outset +
-      SWAP_STAGGER +
-      2;
+    // Per-column overhang: only a column whose last drawn slot has alts can overhang.
+    let overs = stripWidths.map((_, c) =>
+      this.columnAltOverhang(builds.slice(c * perColumn, c * perColumn + perColumn), outset),
+    );
+    // Width of one column's icon band (independent of the strip and alt overhang).
+    const iconRun = () => this.slots.length * iconSize + (this.slots.length - 1) * iconGap;
+    // Content width for a column: strip + icons + symmetric alt reserve (one per side).
+    const contentW = (c: number) => stripWidths[c] + iconRun() + 2 * overs[c];
     const maxColW = () => Math.max(...stripWidths.map((_, c) => contentW(c)));
     let colW = maxColW();
     let width = Math.max(1200, 2 * COL_PAD + columns * colW + (columns - 1) * COL_GAP);
@@ -210,20 +211,28 @@ export class ShareImageService {
         ),
       );
       outset = Math.round(iconSize * SWAP_OUTSET_RATIO);
+      // The overhang depends on the outset, so recompute it after any outset change.
+      overs = stripWidths.map((_, c) =>
+        this.columnAltOverhang(builds.slice(c * perColumn, c * perColumn + perColumn), outset),
+      );
       colW = maxColW();
       width = Math.max(1200, 2 * COL_PAD + columns * colW + (columns - 1) * COL_GAP);
     }
     if (width > COL_WIDTH_CAP) {
-      const stripTotal = stripWidths.reduce((sum, w) => sum + w, 0);
+      // Space left for the icons once strips, alt reserves and column gaps are removed.
+      const stripTotal = stripWidths.reduce((sum, w, c) => sum + w + 2 * overs[c], 0);
       const avail =
         COL_WIDTH_CAP -
         2 * COL_PAD -
         (columns - 1) * COL_GAP -
         stripTotal -
-        columns * (this.slots.length - 1) * iconGap -
-        columns * (outset + SWAP_STAGGER + 2);
+        columns * (this.slots.length - 1) * iconGap;
       iconSize = Math.max(32, Math.floor(avail / (columns * this.slots.length)));
       outset = Math.round(iconSize * SWAP_OUTSET_RATIO);
+      // The overhang depends on the outset, so recompute it after any outset change.
+      overs = stripWidths.map((_, c) =>
+        this.columnAltOverhang(builds.slice(c * perColumn, c * perColumn + perColumn), outset),
+      );
       colW = maxColW();
       width = Math.max(1200, 2 * COL_PAD + columns * colW + (columns - 1) * COL_GAP);
     }
@@ -263,6 +272,29 @@ export class ShareImageService {
     } finally {
       this.unpin(keys);
     }
+  }
+
+  /**
+   * Warms the icon cache for a set of builds so a later share render finds the
+   * bitmaps cached. Best-effort, never throws, no-op outside the browser.
+   */
+  prefetch(builds: PlayerBuild[]): void {
+    if (typeof window === 'undefined' || typeof document === 'undefined') return;
+    const items: GearItem[] = [];
+    for (const build of builds.slice(0, 24)) items.push(...this.collectItems(build));
+    if (!items.length) return;
+    void (async () => {
+      // Save the miss counter so a failed prefetch does not inflate the next render.
+      const savedMissing = this.missingIcons;
+      // Collection size first (primary share path), then the single-build size.
+      for (const px of [COLLECTION_ICON_PX, ICON_REQUEST_PX]) {
+        const keys = await this.preload(items, px);
+        // preload pins its keys; unpinning now keeps evictIfNeeded working.
+        this.unpin(keys);
+        await new Promise((r) => setTimeout(r, 0));
+      }
+      this.missingIcons = savedMissing;
+    })().catch(() => undefined);
   }
 
   // --- rendering internals -------------------------------------------------
@@ -319,10 +351,30 @@ export class ShareImageService {
     }
     if (!any) return 0;
     if (!ctx) {
-      // SSR fallback: no canvas, mirror the floor's usable chip width.
-      widest = COL_STATUS_MIN - 20;
+      // SSR fallback: no canvas, keep the historical 130 px usable chip width.
+      widest = 110;
     }
-    return Math.min(COL_STATUS_MAX, Math.max(COL_STATUS_MIN, widest + 20));
+    return Math.min(COL_STATUS_MAX, widest + COL_STRIP_PAD);
+  }
+
+  /** How far this column's rightmost alt can hang past its icons (0 when none can). */
+  private columnAltOverhang(columnBuilds: PlayerBuild[], outset: number): number {
+    let over = 0;
+    for (const build of columnBuilds) {
+      // The rightmost (last drawn) main slot is the only one that can overhang the panel.
+      let lastMain = -1;
+      for (let i = this.slots.length - 1; i >= 0; i--) {
+        if (build[this.slots[i].field]) {
+          lastMain = i;
+          break;
+        }
+      }
+      if (lastMain < 0) continue;
+      if ((build.swaps?.[this.slots[lastMain].swap] ?? []).length > 0) {
+        over = outset + SWAP_STAGGER;
+      }
+    }
+    return over;
   }
 
   /** Small scratch 2D context used to measure text before the card canvas exists. */

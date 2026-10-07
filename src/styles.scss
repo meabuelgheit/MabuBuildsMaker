@@ -49,6 +49,11 @@ body {
   background-color: #09090b; 
 }
 
+/* `fixed` is the known mobile scroll-jank cause; fall back on touch devices. */
+@media (hover: none) {
+  body { background-attachment: scroll; }
+}
+
 /* Flat scrollbars (Chromium + Firefox), no shadows. */
 ::-webkit-scrollbar { width: 10px; height: 10px; }
 ::-webkit-scrollbar-track { background: #09090b; border-radius: 5px; }
