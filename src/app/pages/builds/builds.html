@@ -89,6 +89,7 @@
           >
             Insert into…
           </button>
+          <button class="btn-secondary" (click)="openShareBuild(entry)" aria-label="Share build as image">⇪ Share</button>
           <button class="btn-danger" (click)="remove(entry.id)">Delete</button>
         </div>
 
@@ -129,3 +130,5 @@
     </div>
   </div>
 }
+
+<app-share-modal [open]="isShareOpen" [request]="shareRequest" (closed)="closeShare()"></app-share-modal>

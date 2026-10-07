@@ -40,6 +40,7 @@ export class BuildCard {
   @Output() duplicateRequest = new EventEmitter<void>();
   @Output() moveUp = new EventEmitter<void>();
   @Output() moveDown = new EventEmitter<void>();
+  @Output() shareRequest = new EventEmitter<void>();
 
   /** Maps each swap slot to its single-item field on PlayerBuild. */
   private static readonly FIELD: Record<keyof BuildSwap, keyof PlayerBuild> = {

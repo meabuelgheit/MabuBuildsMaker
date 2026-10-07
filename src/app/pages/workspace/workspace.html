@@ -63,6 +63,9 @@
             >
               + Add Build ({{ collection.builds.length }}/{{ collection.type === 'party' ? 20 : 12 }})
             </button>
+            <button class="btn-secondary share-collection-btn" (click)="openShareCollection(collection)" aria-label="Share collection as image">
+              ⇪ Share
+            </button>
             <button class="btn-danger" (click)="removeCollection(collection.id)">
               Delete {{ collection.type === 'party' ? 'Party' : 'Group' }}
             </button>
@@ -86,6 +89,7 @@
               (duplicateRequest)="openTargetSelector(build, 'duplicate')"
               (moveUp)="moveBuild(collection.id, build.id, -1)"
               (moveDown)="moveBuild(collection.id, build.id, 1)"
+              (shareRequest)="openShareBuild(build, collection.name)"
             >
             </app-build-card>
           }
@@ -146,3 +150,5 @@
     </div>
   </div>
 }
+
+<app-share-modal [open]="isShareOpen" [request]="shareRequest" (closed)="closeShare()"></app-share-modal>

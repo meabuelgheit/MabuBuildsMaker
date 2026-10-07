@@ -1,0 +1,33 @@
+.share-modal {
+  max-width: 900px;
+}
+
+.share-preview {
+  width: 100%;
+  height: auto;
+  border-radius: 8px;
+  border: 1px solid #27272a;
+  background: #09090b;
+  display: block;
+  max-height: 70vh;
+  object-fit: contain;
+}
+
+.share-status {
+  color: #a1a1aa;
+  text-align: center;
+  padding: 48px 16px;
+  font-size: 0.95rem;
+
+  &.error {
+    color: #f43f5e;
+  }
+}
+
+.share-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 20px;
+  justify-content: flex-end;
+}

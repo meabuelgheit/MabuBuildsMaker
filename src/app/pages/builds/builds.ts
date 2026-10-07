@@ -6,12 +6,13 @@ import { LibraryService } from '../../services/library';
 import { WorkspaceService } from '../../services/workspace';
 import { GearData } from '../../services/gear-data';
 import { ToastService } from '../../services/toast';
+import { ShareModal, ShareRequest } from '../../components/share-modal/share-modal';
 
 /** Builds page: browse, rename, delete and insert saved builds. */
 @Component({
   selector: 'app-builds-page',
   standalone: true,
-  imports: [FormsModule, TitleCasePipe],
+  imports: [FormsModule, TitleCasePipe, ShareModal],
   templateUrl: './builds.html',
   styleUrls: ['./builds.scss'],
 })
@@ -20,6 +21,19 @@ export class BuildsPage {
   workspace = inject(WorkspaceService);
   gearData = inject(GearData);
   private toast = inject(ToastService);
+
+  isShareOpen = false;
+  shareRequest: ShareRequest | null = null;
+
+  /** Opens the share modal for a saved build. */
+  openShareBuild(entry: SavedBuild) {
+    this.shareRequest = { kind: 'build', build: entry.build, subtitle: entry.name };
+    this.isShareOpen = true;
+  }
+
+  closeShare() {
+    this.isShareOpen = false;
+  }
 
   searchQuery = '';
   editingId: string | null = null;

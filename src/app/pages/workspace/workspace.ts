@@ -2,6 +2,7 @@ import { Component, ChangeDetectorRef, inject } from '@angular/core';
 import { TitleCasePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { BuildCard } from '../../components/build-card/build-card';
+import { ShareModal, ShareRequest } from '../../components/share-modal/share-modal';
 import { BuildCollection, PlayerBuild } from '../../shared/models/item';
 import { WorkspaceService, upgradeBuild, upgradeCollection } from '../../services/workspace';
 import { UiStateService } from '../../services/ui-state';
@@ -16,7 +17,7 @@ import { ToastService } from '../../services/toast';
 @Component({
   selector: 'app-workspace-page',
   standalone: true,
-  imports: [FormsModule, BuildCard, TitleCasePipe],
+  imports: [FormsModule, BuildCard, TitleCasePipe, ShareModal],
   templateUrl: './workspace.html',
   styleUrls: ['./workspace.scss'],
 })
@@ -34,8 +35,27 @@ export class WorkspacePage {
   targetAction: 'duplicate' | 'restore' | null = null;
   pendingBuild: PlayerBuild | null = null;
 
+  isShareOpen = false;
+  shareRequest: ShareRequest | null = null;
+
   private toast = inject(ToastService);
   private cdr = inject(ChangeDetectorRef);
+
+  /** Opens the share modal for a single build. */
+  openShareBuild(build: PlayerBuild, subtitle?: string) {
+    this.shareRequest = { kind: 'build', build, subtitle };
+    this.isShareOpen = true;
+  }
+
+  /** Opens the share modal for an entire collection. */
+  openShareCollection(collection: BuildCollection) {
+    this.shareRequest = { kind: 'collection', collection };
+    this.isShareOpen = true;
+  }
+
+  closeShare() {
+    this.isShareOpen = false;
+  }
 
   /** Creates a new party/group collection and starts persistence. */
   addCollection(type: 'party' | 'group') {
