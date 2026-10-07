@@ -72,10 +72,12 @@ interface SlotSpec {
 }
 
 /**
- * 3x3 cell order for the single-build card; each value indexes `slots`, null = empty cell.
- * Rows: [- , head, weapon] / [cape, chest, -] / [potion, shoes, food].
+ * 3x3 cell order for the single-build card; numbers index `slots`, the `'offhand'`
+ * sentinel is the weapon's off-hand alternative, null = empty cell.
+ * Rows: [- , head, cape] / [weapon, chest, offhand] / [potion, shoes, food].
  */
-const BUILD_GRID: (number | null)[] = [null, 1, 0, 4, 2, null, 6, 3, 5];
+type BuildCell = number | 'offhand' | null;
+const BUILD_GRID: BuildCell[] = [null, 1, 4, 0, 2, 'offhand', 6, 3, 5];
 
 /** Computed layout for a collection card. */
 interface CollectionLayout {
@@ -472,19 +474,23 @@ export class ShareImageService {
     const swapSize = Math.round(tile * 0.5);
     const outset = Math.round(tile * SWAP_OUTSET_RATIO);
 
-    // Pass 1: main tiles; the two unmapped grid cells are skipped entirely.
+    // First off-hand alternative (shown in its own cell, not as a weapon overlay).
+    const offhand = (build.swaps?.weapon ?? []).find((w) => w.category === 'offhand') ?? null;
+
+    // Pass 1: main tiles; unmapped cells and an absent off-hand are skipped entirely.
     for (let r = 0; r < 3; r++) {
       for (let c = 0; c < 3; c++) {
-        const idx = BUILD_GRID[r * 3 + c];
-        if (idx === null) continue;
-        const slot = this.slots[idx];
-        const main = build[slot.field] as GearItem | null;
+        const cell = BUILD_GRID[r * 3 + c];
+        if (cell === null) continue;
+        const isOffhand = cell === 'offhand';
+        const item = isOffhand ? offhand : (build[this.slots[cell].field] as GearItem | null);
+        if (isOffhand && !item) continue;
         this.drawTile(
           ctx,
           gridX + c * (tile + gap),
           gridTop + r * (tile + gap),
           tile,
-          main,
+          item,
           ICON_REQUEST_PX,
           0,
           showTierLabels,
@@ -496,14 +502,18 @@ export class ShareImageService {
     // Pass 2: alt tiles hang past each tile's bottom-right corner, layered on top.
     for (let r = 0; r < 3; r++) {
       for (let c = 0; c < 3; c++) {
-        const idx = BUILD_GRID[r * 3 + c];
-        if (idx === null) continue;
-        const slot = this.slots[idx];
+        const cell = BUILD_GRID[r * 3 + c];
+        if (cell === null || cell === 'offhand') continue;
+        const slot = this.slots[cell];
         const main = build[slot.field] as GearItem | null;
         if (!main) continue;
+        // The off-hand already owns its own cell, so keep it off the weapon overlay.
+        const swaps: GearItem[] =
+          slot.field === 'mainHand'
+            ? (build.swaps?.[slot.swap] ?? []).filter((s) => s.category !== 'offhand')
+            : (build.swaps?.[slot.swap] ?? []);
         const tx = gridX + c * (tile + gap);
         const ty = gridTop + r * (tile + gap);
-        const swaps = build.swaps?.[slot.swap] ?? [];
         swaps.slice(0, 2).forEach((swap, j) => {
           const sx = tx + tile - swapSize + outset + j * SWAP_STAGGER;
           const sy = ty + tile - swapSize + outset + j * SWAP_STAGGER;
