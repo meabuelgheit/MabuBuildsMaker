@@ -66,6 +66,8 @@ interface CollectionLayout {
   rowsUsed: number;
   iconSize: number;
   swapSize: number;
+  /** How far alt tiles hang past the main tile's bottom-right corner. */
+  outset: number;
   statusW: number;
   iconGap: number;
   colW: number;
@@ -138,20 +140,51 @@ export class ShareImageService {
     const iconGap = COL_ICON_GAP;
     let iconSize = 96;
     const swapSize = 60;
-    // Measure the widest chip so the status column never truncates it.
-    const statusW = this.measureStatusWidth(builds);
+    // A card "has chips" if any build carries a tag, tier or approval flag.
+    const hasChips = builds.some(
+      (b) => (b.tags?.length ?? 0) > 0 || !!b.minTier || !!b.requiresApproval,
+    );
+    // Status column is measured only when the card actually shows chips.
+    const statusW = hasChips ? this.measureStatusWidth(builds) : 0;
+    // Alt tiles hang past the main corner; reserve that room (plus 2 px) in the column.
+    let outset = Math.round(iconSize * 0.12);
     const measureCol = (icon: number) =>
-      statusW + this.slots.length * icon + (this.slots.length - 1) * iconGap;
+      statusW +
+      this.slots.length * icon +
+      (this.slots.length - 1) * iconGap +
+      outset +
+      2;
     let colW = measureCol(iconSize);
     let width = Math.max(1200, 2 * COL_PAD + columns * colW + (columns - 1) * COL_GAP);
+    if (!hasChips) {
+      // Grow icons into the freed status width, capped at 128 px.
+      iconSize = Math.max(
+        32,
+        Math.min(
+          128,
+          Math.floor(
+            (width -
+              2 * COL_PAD -
+              (columns - 1) * COL_GAP -
+              columns * (this.slots.length - 1) * iconGap) /
+              (columns * this.slots.length),
+          ),
+        ),
+      );
+      outset = Math.round(iconSize * 0.12);
+      colW = measureCol(iconSize);
+      width = Math.max(1200, 2 * COL_PAD + columns * colW + (columns - 1) * COL_GAP);
+    }
     if (width > COL_WIDTH_CAP) {
       const avail =
         COL_WIDTH_CAP -
         2 * COL_PAD -
         (columns - 1) * COL_GAP -
         columns * statusW -
-        columns * (this.slots.length - 1) * iconGap;
+        columns * (this.slots.length - 1) * iconGap -
+        columns * (outset + 2);
       iconSize = Math.max(32, Math.floor(avail / (columns * this.slots.length)));
+      outset = Math.round(iconSize * 0.12);
       colW = measureCol(iconSize);
       width = Math.max(1200, 2 * COL_PAD + columns * colW + (columns - 1) * COL_GAP);
     }
@@ -166,6 +199,7 @@ export class ShareImageService {
       rowsUsed,
       iconSize,
       swapSize,
+      outset,
       statusW,
       iconGap,
       colW,
@@ -439,7 +473,7 @@ export class ShareImageService {
     layout: CollectionLayout,
     showTierLabels: boolean,
   ): void {
-    const { width, height, columns, perColumn, iconSize, swapSize, statusW, iconGap, colW, colGap, headerH, rowH } =
+    const { width, height, columns, perColumn, iconSize, swapSize, outset, statusW, iconGap, colW, colGap, headerH, rowH } =
       layout;
 
     // Header: centred gold, uppercase, letter-spaced collection name only.
@@ -464,28 +498,45 @@ export class ShareImageService {
       ctx.fillStyle = 'rgba(9, 9, 11, 0.64)';
       ctx.fill();
 
-      // Status column (tags, tier, approval).
-      this.drawStatusColumn(ctx, build, colX + 10, rowY + 12, rowH - 20, statusW - 20);
+      // Status column (tags, tier, approval) — only when the card has chips.
+      if (statusW > 0) {
+        this.drawStatusColumn(ctx, build, colX + 10, rowY + 12, rowH - 20, statusW - 20);
+      }
 
-      // Icon row.
       const iconTop = rowY + 8;
       const iconAreaX = colX + statusW;
+
+      // Pass 1: all main icons, so alt overlays can be layered on top afterwards.
       for (let i = 0; i < this.slots.length; i++) {
         const slot = this.slots[i];
         const main = build[slot.field] as GearItem | null;
-        const ix = iconAreaX + i * (iconSize + iconGap);
         if (main) {
-          this.drawTile(ctx, ix, iconTop, iconSize, main, COLLECTION_ICON_PX, 14, showTierLabels);
-
-          // Swaps as small overlays on the bottom-right of the main icon.
-          const swaps = build.swaps?.[slot.swap] ?? [];
-          swaps.slice(0, 2).forEach((swap, j) => {
-            // Stagger of 8 px keeps the pair flush with the next icon (gap is 8).
-            const sx = ix + iconSize - swapSize + j * 8;
-            const sy = iconTop + iconSize - swapSize + j * 8;
-            this.drawTile(ctx, sx, sy, swapSize, swap, COLLECTION_ICON_PX, 0, showTierLabels);
-          });
+          this.drawTile(
+            ctx,
+            iconAreaX + i * (iconSize + iconGap),
+            iconTop,
+            iconSize,
+            main,
+            COLLECTION_ICON_PX,
+            14,
+            showTierLabels,
+          );
         }
+      }
+
+      // Pass 2: alt tiles hang past the main corner (app-like z-order).
+      for (let i = 0; i < this.slots.length; i++) {
+        const slot = this.slots[i];
+        const main = build[slot.field] as GearItem | null;
+        if (!main) continue;
+        const ix = iconAreaX + i * (iconSize + iconGap);
+        const swaps = build.swaps?.[slot.swap] ?? [];
+        swaps.slice(0, 2).forEach((swap, j) => {
+          // Outset (~12%) hangs the tile past the corner; 8 px staggers the pair.
+          const sx = ix + iconSize - swapSize + outset + j * 8;
+          const sy = iconTop + iconSize - swapSize + outset + j * 8;
+          this.drawTile(ctx, sx, sy, swapSize, swap, COLLECTION_ICON_PX, 0, showTierLabels);
+        });
       }
     });
 
@@ -530,7 +581,8 @@ export class ShareImageService {
     }
 
     // Tier label beneath, on a small dark chip so it stays legible over the artwork.
-    if (item && tierFont > 0 && showTierLabels) {
+    // Only when the bitmap was drawn — placeholders keep their label inside the tile.
+    if (item && bmp && tierFont > 0 && showTierLabels) {
       const label = tierLabel(item.name);
       ctx.font = `700 ${tierFont}px Inter, sans-serif`;
       ctx.textAlign = 'center';
