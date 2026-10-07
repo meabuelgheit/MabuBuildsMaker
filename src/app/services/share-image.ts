@@ -503,37 +503,47 @@ export class ShareImageService {
     tierFont: number,
     showTierLabels: boolean,
   ): void {
-    // Tile background
-    this.roundRect(ctx, x, y, size, size, Math.max(6, size * 0.12));
-    ctx.fillStyle = '#101013';
-    ctx.fill();
-    ctx.strokeStyle = BORDER;
-    ctx.lineWidth = 1;
-    ctx.stroke();
+    const bmp = item ? this.cache.get(`${item.id}@${px}`) ?? null : null;
 
-    if (!item) return;
-
-    const bmp = this.cache.get(`${item.id}@${px}`) ?? null;
-    const label = tierLabel(item.name);
-    if (bmp) {
+    if (item && bmp) {
+      // Real icon: no opaque tile, so transparent regions reveal the artwork (zen parity).
       ctx.drawImage(bmp, x, y, size, size);
     } else {
-      // Placeholder tile
-      ctx.fillStyle = '#1c1c20';
+      // Empty slot or missing bitmap: opaque tile + border.
+      this.roundRect(ctx, x, y, size, size, Math.max(6, size * 0.12));
+      ctx.fillStyle = '#101013';
       ctx.fill();
-      ctx.fillStyle = MUTED;
-      ctx.font = `700 ${Math.max(10, Math.round(size * 0.26))}px Inter, sans-serif`;
-      ctx.textAlign = 'center';
-      ctx.fillText(label, x + size / 2, y + size / 2 + size * 0.1);
-      ctx.textAlign = 'left';
+      ctx.strokeStyle = BORDER;
+      ctx.lineWidth = 1;
+      ctx.stroke();
+
+      if (item) {
+        // Placeholder: lighter fill plus the tier label as the tile's only content.
+        ctx.fillStyle = '#1c1c20';
+        ctx.fill();
+        ctx.fillStyle = MUTED;
+        ctx.font = `700 ${Math.max(10, Math.round(size * 0.26))}px Inter, sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.fillText(tierLabel(item.name), x + size / 2, y + size / 2 + size * 0.1);
+        ctx.textAlign = 'left';
+      }
     }
 
-    // Tier label beneath (hidden by preference; placeholders keep theirs above)
-    if (tierFont > 0 && showTierLabels) {
-      ctx.fillStyle = GOLD;
+    // Tier label beneath, on a small dark chip so it stays legible over the artwork.
+    if (item && tierFont > 0 && showTierLabels) {
+      const label = tierLabel(item.name);
       ctx.font = `700 ${tierFont}px Inter, sans-serif`;
       ctx.textAlign = 'center';
-      ctx.fillText(label, x + size / 2, y + size + tierFont + 3);
+      ctx.textBaseline = 'alphabetic';
+      const chipW = ctx.measureText(label).width + 8;
+      const chipH = tierFont + 4;
+      const cx = x + size / 2;
+      const cy = y + size + 3;
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.65)';
+      this.roundRect(ctx, cx - chipW / 2, cy, chipW, chipH, 4);
+      ctx.fill();
+      ctx.fillStyle = GOLD;
+      ctx.fillText(label, cx, cy + chipH - 4);
       ctx.textAlign = 'left';
     }
   }
