@@ -1,16 +1,17 @@
 import { Component, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { TitleCasePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { GearItem, PlayerBuild, SavedBuild } from '../../shared/models/item';
 import { LibraryService } from '../../services/library';
 import { WorkspaceService } from '../../services/workspace';
 import { GearData } from '../../services/gear-data';
+import { ToastService } from '../../services/toast';
 
 /** Builds page: browse, rename, delete and insert saved builds. */
 @Component({
   selector: 'app-builds-page',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [FormsModule, TitleCasePipe],
   templateUrl: './builds.html',
   styleUrls: ['./builds.scss'],
 })
@@ -18,6 +19,7 @@ export class BuildsPage {
   library = inject(LibraryService);
   workspace = inject(WorkspaceService);
   gearData = inject(GearData);
+  private toast = inject(ToastService);
 
   searchQuery = '';
   editingId: string | null = null;
@@ -50,6 +52,7 @@ export class BuildsPage {
   remove(id: string) {
     if (confirm('Delete this saved build?')) {
       this.library.remove(id);
+      this.toast.show('Saved build deleted.', 'info');
     }
   }
 
@@ -78,6 +81,7 @@ export class BuildsPage {
     collection.builds.push(clone);
     collection.updatedAt = Date.now();
     this.workspace.touch();
+    this.toast.show('Build inserted.');
     this.closeTargetModal();
   }
 

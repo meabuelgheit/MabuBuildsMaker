@@ -1,5 +1,5 @@
 import { Component, ChangeDetectorRef, OnInit, inject, PLATFORM_ID } from '@angular/core';
-import { CommonModule, isPlatformBrowser } from '@angular/common';
+import { isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { GearItem, TierPreferenceKey } from '../../shared/models/item';
 import { PreferencesService } from '../../services/preferences';
@@ -9,7 +9,7 @@ import { GearData } from '../../services/gear-data';
 @Component({
   selector: 'app-settings-page',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [FormsModule],
   templateUrl: './settings.html',
   styleUrls: ['./settings.scss'],
 })

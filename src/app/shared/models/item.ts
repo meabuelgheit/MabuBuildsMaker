@@ -101,3 +101,9 @@ export function categoryToTierSlot(category: ItemCategory): TierPreferenceKey {
   if (category === 'weapon1h' || category === 'weapon2h') return 'weapon';
   return category;
 }
+
+/** Extracts the `T.t` tier label from an item name, falling back to the name. */
+export function tierLabel(name: string): string {
+  const match = name.match(/^(\d+\.\d+)/);
+  return match ? match[0] : name;
+}

@@ -7,58 +7,74 @@
   <section class="group-section">
     <h3 class="section-title">Active</h3>
 
-    <div class="empty-state" *ngIf="workspace.collections.length === 0">
-      <p>No active collections yet.</p>
-    </div>
+    @if (workspace.collections.length === 0) {
+      <div class="empty-state">
+        <p>No active collections yet.</p>
+      </div>
+    }
 
     <div class="card-grid">
-      <div class="group-card" *ngFor="let collection of workspace.collections">
-        <div class="card-top">
-          <span class="card-name">{{ collection.name }}</span>
-          <span class="card-type">{{ collection.type | titlecase }}</span>
+      @for (collection of workspace.collections; track collection.id) {
+        <div class="group-card">
+          <div class="card-top">
+            <span class="card-name">{{ collection.name }}</span>
+            <span class="card-type">{{ collection.type | titlecase }}</span>
+          </div>
+          <div class="card-meta">
+            <span>{{ collection.builds.length }} build(s)</span>
+            <span>Modified: {{ formatDate(collection.updatedAt) }}</span>
+          </div>
+          @if (collection.builds.length > 0) {
+            <ul class="build-titles">
+              @for (title of titles(collection); track $index) {
+                <li>{{ title }}</li>
+              }
+            </ul>
+          }
+          <div class="card-actions">
+            <button class="btn-primary" (click)="open(collection)">Open</button>
+            <button class="btn-secondary" (click)="duplicate(collection.id)">Duplicate</button>
+          </div>
         </div>
-        <div class="card-meta">
-          <span>{{ collection.builds.length }} build(s)</span>
-          <span>Modified: {{ formatDate(collection.updatedAt) }}</span>
-        </div>
-        <ul class="build-titles" *ngIf="collection.builds.length > 0">
-          <li *ngFor="let title of titles(collection)">{{ title }}</li>
-        </ul>
-        <div class="card-actions">
-          <button class="btn-primary" (click)="open(collection)">Open</button>
-          <button class="btn-secondary" (click)="duplicate(collection.id)">Duplicate</button>
-        </div>
-      </div>
+      }
     </div>
   </section>
 
   <section class="group-section">
     <h3 class="section-title">Archived</h3>
 
-    <div class="empty-state" *ngIf="archived.length === 0">
-      <p>Nothing archived yet. Deleting a collection archives it here.</p>
-    </div>
+    @if (archived.length === 0) {
+      <div class="empty-state">
+        <p>Nothing archived yet. Deleting a collection archives it here.</p>
+      </div>
+    }
 
     <div class="card-grid">
-      <div class="group-card" *ngFor="let entry of archived">
-        <div class="card-top">
-          <span class="card-name">{{ entry.collection.name }}</span>
-          <span class="card-type">{{ entry.collection.type | titlecase }}</span>
+      @for (entry of archived; track entry.collection.id) {
+        <div class="group-card">
+          <div class="card-top">
+            <span class="card-name">{{ entry.collection.name }}</span>
+            <span class="card-type">{{ entry.collection.type | titlecase }}</span>
+          </div>
+          <div class="card-meta">
+            <span>{{ entry.collection.builds.length }} build(s)</span>
+            <span>Archived: {{ formatDate(entry.archivedAt) }}</span>
+          </div>
+          @if (entry.collection.builds.length > 0) {
+            <ul class="build-titles">
+              @for (title of titles(entry.collection); track $index) {
+                <li>{{ title }}</li>
+              }
+            </ul>
+          }
+          <div class="card-actions">
+            <button class="btn-primary" (click)="open(entry.collection)">Open</button>
+            <button class="btn-secondary" (click)="duplicate(entry.collection.id)">Duplicate</button>
+            <button class="btn-secondary" (click)="restore(entry.collection.id)">Restore</button>
+            <button class="btn-danger" (click)="deleteForever(entry.collection.id)">Delete forever</button>
+          </div>
         </div>
-        <div class="card-meta">
-          <span>{{ entry.collection.builds.length }} build(s)</span>
-          <span>Archived: {{ formatDate(entry.archivedAt) }}</span>
-        </div>
-        <ul class="build-titles" *ngIf="entry.collection.builds.length > 0">
-          <li *ngFor="let title of titles(entry.collection)">{{ title }}</li>
-        </ul>
-        <div class="card-actions">
-          <button class="btn-primary" (click)="open(entry.collection)">Open</button>
-          <button class="btn-secondary" (click)="duplicate(entry.collection.id)">Duplicate</button>
-          <button class="btn-secondary" (click)="restore(entry.collection.id)">Restore</button>
-          <button class="btn-danger" (click)="deleteForever(entry.collection.id)">Delete forever</button>
-        </div>
-      </div>
+      }
     </div>
   </section>
 </div>

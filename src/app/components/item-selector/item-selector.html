@@ -1,44 +1,63 @@
-<div class="modal-backdrop" *ngIf="isOpen" (click)="closeModal()">
-  <div class="modal-content" (click)="$event.stopPropagation()">
-    <div class="modal-header">
-      <h3>
-        <span *ngIf="step === 'base'">Select {{ category | titlecase }}</span>
-        <span *ngIf="step === 'tier'">Select Tier: {{ selectedGroup?.name }}</span>
-      </h3>
-      <button class="close-btn" (click)="closeModal()">X</button>
-    </div>
-
-    <input
-      *ngIf="step === 'base'"
-      type="text"
-      class="search-bar"
-      [id]="'item-search-' + instanceId"
-      name="itemSearch"
-      aria-label="Search items"
-      placeholder="Search items..."
-      [(ngModel)]="searchQuery"
-    />
-
-    <div class="modal-actions" *ngIf="step === 'tier'">
-      <button class="back-btn" (click)="goBack()">← Back to Items</button>
-    </div>
-
-    <div class="item-list base-list" *ngIf="step === 'base'">
-      <div class="text-row" *ngFor="let group of filteredGroups" (click)="selectGroup(group)">
-        <span class="item-name">{{ group.name }}</span>
+@if (isOpen) {
+  <div class="modal-backdrop" (click)="closeModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>
+          @if (step === 'base') {
+            <span>Select {{ category | titlecase }}</span>
+          }
+          @if (step === 'tier') {
+            <span>Select Tier: {{ selectedGroup?.name }}</span>
+          }
+        </h3>
+        <button class="close-btn" (click)="closeModal()">X</button>
       </div>
-    </div>
 
-    <div class="tier-container" *ngIf="step === 'tier'">
-      <div class="tier-row" *ngFor="let tierGroup of organizedTiers">
-        <div
-          class="text-card tier-card"
-          *ngFor="let item of tierGroup.items"
-          (click)="selectVariation(item)"
-        >
-          <span class="tier-label">{{ getTierLabel(item.name) }}</span>
+      @if (step === 'base') {
+        <input
+          type="text"
+          class="search-bar"
+          [id]="'item-search-' + instanceId"
+          name="itemSearch"
+          aria-label="Search items"
+          placeholder="Search items..."
+          [(ngModel)]="searchQuery"
+        />
+      }
+
+      @if (step === 'tier') {
+        <div class="modal-actions">
+          <button class="back-btn" (click)="goBack()">← Back to Items</button>
         </div>
-      </div>
+      }
+
+      @if (step === 'base') {
+        @if (isLoading) {
+          <div class="loading-items" aria-live="polite">Loading items…</div>
+        } @else {
+          <div class="item-list base-list">
+            @for (group of filteredGroups; track group.name) {
+              <div class="text-row" (click)="selectGroup(group)">
+                <span class="item-name">{{ group.name }}</span>
+              </div>
+            }
+          </div>
+        }
+      }
+
+      @if (step === 'tier') {
+        <div class="tier-container">
+          @for (tierGroup of organizedTiers; track tierGroup.tier) {
+            <div class="tier-row">
+              @for (item of tierGroup.items; track item.id) {
+                <div class="text-card tier-card" (click)="selectVariation(item)">
+                  <span class="tier-label">{{ getTierLabel(item.name) }}</span>
+                </div>
+              }
+            </div>
+          }
+        </div>
+      }
     </div>
   </div>
-</div>
+}

@@ -61,7 +61,7 @@ body {
 
 .collection-container {
   position: relative; z-index: 1; 
-  width: fit-content; min-width: 1000px; max-width: 100%; 
+  width: fit-content; min-width: min(1000px, 100%); max-width: 100%; 
   margin-bottom: 60px; padding: 32px; box-sizing: border-box;
   border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px;
   display: flex; flex-direction: column; align-items: center; 
@@ -83,7 +83,7 @@ body {
   display: grid;
   width: fit-content;
   max-width: 100%;
-  gap: 8px 48px;
+  gap: 6px 28px;
   justify-content: center;
   grid-auto-flow: column;
   grid-auto-columns: max-content;
@@ -165,5 +165,17 @@ button {
     &:hover:not(:disabled) { border-color: #d4af37; background: #27272a; }
     &:disabled { opacity: 0.5; cursor: not-allowed; }
     .target-type { color: #a1a1aa; font-size: 0.85rem; }
+  }
+}
+
+@media (max-width: 900px) {
+  .content-wrapper { padding: 96px 12px 24px; }
+
+  .collection-container { padding: 16px; margin-bottom: 32px; }
+
+  .collection-header {
+    flex-wrap: wrap;
+
+    .collection-name-input { width: 100%; }
   }
 }

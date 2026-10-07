@@ -2,17 +2,20 @@
   {{ uiState.hideUI ? '+' : '−' }}
 </button>
 
-<div class="toolbar-wrapper" *ngIf="!uiState.hideUI">
-  <div class="toolbar">
-    <h1 class="project-title">Mabu Builds Viewer</h1>
+@if (!uiState.hideUI) {
+  <div class="toolbar-wrapper">
+    <div class="toolbar">
+      <a class="project-title" routerLink="/">Mabu Builds Maker</a>
 
-    <nav class="toolbar-nav">
-      <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Workspace</a>
-      <a routerLink="/groups" routerLinkActive="active">Groups</a>
-      <a routerLink="/builds" routerLinkActive="active">Builds</a>
-      <a routerLink="/settings" routerLinkActive="active">Settings</a>
-    </nav>
+      <nav class="toolbar-nav">
+        <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Workspace</a>
+        <a routerLink="/groups" routerLinkActive="active">Groups</a>
+        <a routerLink="/builds" routerLinkActive="active">Builds</a>
+        <a routerLink="/settings" routerLinkActive="active">Settings</a>
+      </nav>
+    </div>
   </div>
-</div>
+}
 
 <router-outlet />
+<app-toast-host />

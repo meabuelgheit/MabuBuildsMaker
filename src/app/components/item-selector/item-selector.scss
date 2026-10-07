@@ -52,6 +52,8 @@ $slot-bg: #09090b;
   &::-webkit-scrollbar-thumb { background: $border-color; border-radius: 4px; &:hover { background: color.adjust($border-color, $lightness: 10%); } }
 }
 
+.loading-items { color: $text-muted; text-align: center; padding: 32px 16px; font-size: 0.95rem; }
+
 .item-list {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));

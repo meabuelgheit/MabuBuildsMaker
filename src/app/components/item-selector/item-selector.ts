@@ -5,11 +5,15 @@ import {
   EventEmitter,
   OnInit,
   OnDestroy,
+  OnChanges,
+  SimpleChanges,
   ElementRef,
+  ChangeDetectorRef,
+  ChangeDetectionStrategy,
   inject,
   PLATFORM_ID,
 } from '@angular/core';
-import { CommonModule, isPlatformBrowser } from '@angular/common';
+import { isPlatformBrowser, TitleCasePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import {
   GearItem,
@@ -17,6 +21,7 @@ import {
   GroupedItem,
   TierPreferences,
   categoryToTierSlot,
+  tierLabel,
 } from '../../shared/models/item';
 import { GearData } from '../../services/gear-data';
 import { PreferencesService } from '../../services/preferences';
@@ -27,11 +32,12 @@ let itemSelectorInstanceCounter = 0;
 @Component({
   selector: 'app-item-selector',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [FormsModule, TitleCasePipe],
   templateUrl: './item-selector.html',
   styleUrls: ['./item-selector.scss'],
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class ItemSelector implements OnInit, OnDestroy {
+export class ItemSelector implements OnInit, OnDestroy, OnChanges {
   @Input() isOpen = false;
   @Input() category: SlotCategory | null = null;
   @Input() isSwapMode = false;
@@ -50,8 +56,12 @@ export class ItemSelector implements OnInit, OnDestroy {
   /** Unique id fragment used to disambiguate DOM ids across instances. */
   readonly instanceId = ++itemSelectorInstanceCounter;
 
+  private itemsLoaded = false;
+  isLoading = false;
+
   private platformId = inject(PLATFORM_ID);
   private preferences = inject(PreferencesService);
+  private cdr = inject(ChangeDetectorRef);
 
   constructor(
     public gearData: GearData,
@@ -60,18 +70,26 @@ export class ItemSelector implements OnInit, OnDestroy {
 
   ngOnInit() {
     if (!isPlatformBrowser(this.platformId)) return;
-
     document.body.appendChild(this.el.nativeElement);
-
-    this.gearData.getAvailableItems().subscribe((items) => {
-      this.allItems = items;
-      this.groupItems();
-    });
   }
 
   ngOnDestroy() {
     if (this.el.nativeElement && this.el.nativeElement.parentNode) {
       this.el.nativeElement.parentNode.removeChild(this.el.nativeElement);
+    }
+  }
+
+  /** Loads the catalog lazily on the first transition to open. */
+  ngOnChanges(changes: SimpleChanges) {
+    if (changes['isOpen']?.currentValue === true && !this.itemsLoaded) {
+      this.itemsLoaded = true;
+      this.isLoading = true;
+      this.gearData.getAvailableItems().subscribe((items) => {
+        this.allItems = items;
+        this.groupItems();
+        this.isLoading = false;
+        this.cdr.markForCheck();
+      });
     }
   }
 
@@ -177,7 +195,6 @@ export class ItemSelector implements OnInit, OnDestroy {
   }
 
   getTierLabel(name: string): string {
-    const match = name.match(/^(\d+\.\d+)/);
-    return match ? match[0] : name;
+    return tierLabel(name);
   }
 }

@@ -29,7 +29,8 @@ export class GearData {
     return this.items$;
   }
 
-  getImageUrl(itemId: string): string {
-    return `https://render.albiononline.com/v1/item/${itemId}.png?quality=4`;
+  /** Builds a render-service icon URL at the requested pixel size. */
+  getImageUrl(itemId: string, size: 64 | 128 | 217 = 128): string {
+    return `https://render.albiononline.com/v1/item/${itemId}.png?quality=4&size=${size}`;
   }
 }

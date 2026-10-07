@@ -1,5 +1,5 @@
 import { Component, ChangeDetectorRef, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { TitleCasePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { BuildCard } from '../../components/build-card/build-card';
 import { BuildCollection, PlayerBuild } from '../../shared/models/item';
@@ -7,6 +7,7 @@ import { WorkspaceService, upgradeBuild, upgradeCollection } from '../../service
 import { UiStateService } from '../../services/ui-state';
 import { PreferencesService } from '../../services/preferences';
 import { LibraryService } from '../../services/library';
+import { ToastService } from '../../services/toast';
 
 /**
  * Workspace page: creates collections, edits their builds and handles
@@ -15,7 +16,7 @@ import { LibraryService } from '../../services/library';
 @Component({
   selector: 'app-workspace-page',
   standalone: true,
-  imports: [CommonModule, FormsModule, BuildCard],
+  imports: [FormsModule, BuildCard, TitleCasePipe],
   templateUrl: './workspace.html',
   styleUrls: ['./workspace.scss'],
 })
@@ -32,8 +33,8 @@ export class WorkspacePage {
   isTargetModalOpen = false;
   targetAction: 'duplicate' | 'restore' | null = null;
   pendingBuild: PlayerBuild | null = null;
-  archivedConfirmation = false;
 
+  private toast = inject(ToastService);
   private cdr = inject(ChangeDetectorRef);
 
   /** Creates a new party/group collection and starts persistence. */
@@ -47,16 +48,13 @@ export class WorkspacePage {
       updatedAt: Date.now(),
     });
     this.workspace.touch();
+    this.toast.show('Collection created.');
   }
 
-  /** Archives a collection and briefly confirms where it went. */
+  /** Archives a collection and reports where it went. */
   removeCollection(id: string) {
     this.workspace.archiveCollection(id);
-    this.archivedConfirmation = true;
-    setTimeout(() => {
-      this.archivedConfirmation = false;
-      this.cdr.markForCheck();
-    }, 3000);
+    this.toast.show('Archived. Find it on the Groups page.');
   }
 
   /** Flips a collection's view-mode visibility and persists. */
@@ -115,6 +113,7 @@ export class WorkspacePage {
         this.workspace.trashedBuilds.push(deleted);
         collection.updatedAt = Date.now();
         this.workspace.touch();
+        this.toast.show('Build moved to trash.');
       }
     }
   }
@@ -172,6 +171,9 @@ export class WorkspacePage {
     }
 
     this.workspace.touch();
+    this.toast.show(
+      this.targetAction === 'restore' ? 'Build restored.' : 'Build duplicated.',
+    );
     this.closeTargetModal();
   }
 
@@ -207,6 +209,7 @@ export class WorkspacePage {
     a.download = 'mabu-builds-backup.json';
     a.click();
     window.URL.revokeObjectURL(url);
+    this.toast.show('Backup exported.');
   }
 
   /** Imports a legacy array or a full backup object, upgrading on the way in. */
@@ -230,6 +233,7 @@ export class WorkspacePage {
           ];
           this.workspace.touch();
           this.cdr.detectChanges();
+          this.toast.show('Collections imported.');
         } else if (
           parsed &&
           typeof parsed === 'object' &&
@@ -257,12 +261,13 @@ export class WorkspacePage {
           );
           this.preferences.replaceAll(parsed.preferences ?? {});
           this.cdr.detectChanges();
+          this.toast.show('Backup imported.');
         } else {
-          alert('Invalid file format.');
+          this.toast.show('Invalid file format.', 'error');
         }
       } catch (err) {
         console.error('Failed to parse file:', err);
-        alert('Could not read the build file.');
+        this.toast.show('Could not read the build file.', 'error');
       }
       event.target.value = '';
     };
