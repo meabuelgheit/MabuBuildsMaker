@@ -71,6 +71,14 @@ interface SlotSpec {
   swap: keyof BuildSwap;
 }
 
+/** One status chip: a tag, tier requirement or approval flag, plus its colours. */
+interface StatusChip {
+  text: string;
+  fill: string;
+  border: string | null;
+  color: string;
+}
+
 /**
  * 3x3 cell order for the single-build card; numbers index `slots`, the `'offhand'`
  * sentinel is the weapon's off-hand alternative, null = empty cell.
@@ -90,7 +98,10 @@ interface CollectionLayout {
   swapSize: number;
   /** How far alt tiles hang past the main tile's bottom-right corner. */
   outset: number;
-  statusW: number;
+  /** Per-column chip strip width; 0 means that column draws no strip. */
+  stripWidths: number[];
+  /** Per-column content width (strip + icons + alt overflow). */
+  contentWs: number[];
   iconGap: number;
   colW: number;
   colGap: number;
@@ -164,25 +175,27 @@ export class ShareImageService {
     const iconGap = COL_ICON_GAP;
     let iconSize = 96;
     const swapSize = 60;
-    // A card "has chips" if any build carries a tag, tier or approval flag.
-    const hasChips = builds.some(
-      (b) => (b.tags?.length ?? 0) > 0 || !!b.minTier || !!b.requiresApproval,
-    );
-    // Status column is measured only when the card actually shows chips.
-    const statusW = hasChips ? this.measureStatusWidth(builds) : 0;
+    // Per-column chip strips: a column reserves one only if it actually has chips.
+    const stripWidths = Array.from({ length: columns }, (_, c) => {
+      const start = c * perColumn;
+      return this.measureColumnStrip(builds.slice(start, start + perColumn));
+    });
+    const anyChips = stripWidths.some((w) => w > 0);
     // Alt tiles hang past the main corner; reserve the outset + stagger (+ 2 px).
     let outset = Math.round(iconSize * SWAP_OUTSET_RATIO);
-    const measureCol = (icon: number) =>
-      statusW +
-      this.slots.length * icon +
+    // Content width for a column: strip + icons + alt overflow.
+    const contentW = (c: number) =>
+      stripWidths[c] +
+      this.slots.length * iconSize +
       (this.slots.length - 1) * iconGap +
       outset +
       SWAP_STAGGER +
       2;
-    let colW = measureCol(iconSize);
+    const maxColW = () => Math.max(...stripWidths.map((_, c) => contentW(c)));
+    let colW = maxColW();
     let width = Math.max(1200, 2 * COL_PAD + columns * colW + (columns - 1) * COL_GAP);
-    if (!hasChips) {
-      // Grow icons into the freed status width, capped at 128 px.
+    if (!anyChips) {
+      // Grow icons into the freed strip width, capped at 128 px.
       iconSize = Math.max(
         32,
         Math.min(
@@ -197,22 +210,24 @@ export class ShareImageService {
         ),
       );
       outset = Math.round(iconSize * SWAP_OUTSET_RATIO);
-      colW = measureCol(iconSize);
+      colW = maxColW();
       width = Math.max(1200, 2 * COL_PAD + columns * colW + (columns - 1) * COL_GAP);
     }
     if (width > COL_WIDTH_CAP) {
+      const stripTotal = stripWidths.reduce((sum, w) => sum + w, 0);
       const avail =
         COL_WIDTH_CAP -
         2 * COL_PAD -
         (columns - 1) * COL_GAP -
-        columns * statusW -
+        stripTotal -
         columns * (this.slots.length - 1) * iconGap -
         columns * (outset + SWAP_STAGGER + 2);
       iconSize = Math.max(32, Math.floor(avail / (columns * this.slots.length)));
       outset = Math.round(iconSize * SWAP_OUTSET_RATIO);
-      colW = measureCol(iconSize);
+      colW = maxColW();
       width = Math.max(1200, 2 * COL_PAD + columns * colW + (columns - 1) * COL_GAP);
     }
+    const contentWs = stripWidths.map((_, c) => contentW(c));
 
     const rowH = iconSize + 44;
     const height = COL_HEADER_H + rowsUsed * rowH + COL_FOOTER_H;
@@ -225,7 +240,8 @@ export class ShareImageService {
       iconSize,
       swapSize,
       outset,
-      statusW,
+      stripWidths,
+      contentWs,
       iconGap,
       colW,
       colGap: COL_GAP,
@@ -269,21 +285,40 @@ export class ShareImageService {
   }
 
   /**
-   * Measures the widest status chip (tags, tier, literal "Approval Only") at the
-   * chip font and returns a clamped column width so no chip is truncated.
+   * Builds a single row's chips (tags, then tier, then approval) in draw order.
+   * Shared by the strip measurement and the drawing so the two never disagree.
    */
-  private measureStatusWidth(builds: PlayerBuild[]): number {
-    const texts: string[] = ['Approval Only'];
-    for (const build of builds) {
-      for (const tag of build.tags ?? []) texts.push(tag);
-      if (build.minTier) texts.push(build.minTier);
+  private buildChips(build: PlayerBuild): StatusChip[] {
+    const chips: StatusChip[] = [];
+    for (const tag of build.tags ?? []) {
+      chips.push({ text: tag, fill: '#27272a', border: '#3f3f46', color: TEXT });
     }
-    let widest = 0;
+    if (build.minTier) {
+      chips.push({ text: build.minTier, fill: GOLD, border: null, color: '#09090b' });
+    }
+    if (build.requiresApproval) {
+      chips.push({ text: 'Approval Only', fill: CRIMSON_FILL, border: CRIMSON_BORDER, color: '#ffffff' });
+    }
+    return chips;
+  }
+
+  /**
+   * Measures a column's chip strip: 0 when no build in that column has a chip,
+   * otherwise the widest chip plus padding, clamped to the strip bounds.
+   */
+  private measureColumnStrip(columnBuilds: PlayerBuild[]): number {
     const ctx = this.measureContext();
-    if (ctx) {
-      ctx.font = '700 13px Inter, sans-serif';
-      for (const text of texts) widest = Math.max(widest, ctx.measureText(text).width + 16);
-    } else {
+    if (ctx) ctx.font = '700 13px Inter, sans-serif';
+    let any = false;
+    let widest = 0;
+    for (const build of columnBuilds) {
+      for (const chip of this.buildChips(build)) {
+        any = true;
+        if (ctx) widest = Math.max(widest, ctx.measureText(chip.text).width + 16);
+      }
+    }
+    if (!any) return 0;
+    if (!ctx) {
       // SSR fallback: no canvas, mirror the floor's usable chip width.
       widest = COL_STATUS_MIN - 20;
     }
@@ -433,11 +468,13 @@ export class ShareImageService {
       cursor = this.drawPill(ctx, 'Approval Only', cursor, 62, CRIMSON_FILL, CRIMSON_BORDER, '#ffffff');
     }
 
-    // Subtitle
-    if (subtitle) {
+    // Subtitle: only when it adds information (non-empty and differing from the title).
+    const subtitleText = (subtitle ?? '').trim();
+    const titleText = (build.title || '').trim();
+    if (subtitleText && subtitleText.toLowerCase() !== titleText.toLowerCase()) {
       ctx.fillStyle = MUTED;
       ctx.font = '400 22px Inter, sans-serif';
-      ctx.fillText(this.truncate(ctx, subtitle, width - padX * 2 - 200), padX + 8, 126);
+      ctx.fillText(this.truncate(ctx, subtitleText, width - padX * 2 - 200), padX + 8, 126);
     }
 
     // Tags: draw the fitted chips right-to-left.
@@ -531,7 +568,7 @@ export class ShareImageService {
     layout: CollectionLayout,
     showTierLabels: boolean,
   ): void {
-    const { width, height, columns, perColumn, iconSize, swapSize, outset, statusW, iconGap, colW, colGap, headerH, rowH } =
+    const { width, height, columns, perColumn, iconSize, swapSize, outset, stripWidths, contentWs, iconGap, colW, colGap, headerH, rowH } =
       layout;
 
     // Header: centred gold, uppercase, letter-spaced collection name only.
@@ -556,13 +593,17 @@ export class ShareImageService {
       ctx.fillStyle = 'rgba(9, 9, 11, 0.64)';
       ctx.fill();
 
-      // Status column (tags, tier, approval) — only when the card has chips.
-      if (statusW > 0) {
-        this.drawStatusColumn(ctx, build, colX + 10, rowY + 12, rowH - 20, statusW - 20);
+      // Centre this column's content (strip + icons) in its equal-width container.
+      const contentX = colX + (colW - contentWs[col]) / 2;
+      const stripX = contentX;
+      const iconAreaX = contentX + stripWidths[col];
+
+      // Status column (tags, tier, approval) — only when this column has chips.
+      if (stripWidths[col] > 0) {
+        this.drawStatusColumn(ctx, build, stripX, rowY + 12, rowH - 20, stripWidths[col]);
       }
 
       const iconTop = rowY + 8;
-      const iconAreaX = colX + statusW;
 
       // Pass 1: all main icons, so alt overlays can be layered on top afterwards.
       for (let i = 0; i < this.slots.length; i++) {
@@ -687,7 +728,7 @@ export class ShareImageService {
     ctx.fillText(label, x + 10, y + 4 + h - 5);
   }
 
-  /** Stacks a build's tags, tier requirement and approval chip on the left. */
+  /** Stacks a build's chips, centred in the strip and on the icon band. */
   private drawStatusColumn(
     ctx: CanvasRenderingContext2D,
     build: PlayerBuild,
@@ -696,27 +737,14 @@ export class ShareImageService {
     maxH: number,
     width: number,
   ): void {
-    interface StatusChip {
-      text: string;
-      fill: string;
-      border: string | null;
-      color: string;
-    }
-    const chips: StatusChip[] = [];
-    for (const tag of build.tags ?? []) {
-      chips.push({ text: tag, fill: '#27272a', border: '#3f3f46', color: TEXT });
-    }
-    if (build.minTier) {
-      chips.push({ text: build.minTier, fill: GOLD, border: null, color: '#09090b' });
-    }
-    if (build.requiresApproval) {
-      chips.push({ text: 'Approval Only', fill: CRIMSON_FILL, border: CRIMSON_BORDER, color: '#ffffff' });
-    }
+    const chips = this.buildChips(build);
 
     const chipH = 22;
     const gap = 6;
     ctx.font = '700 13px Inter, sans-serif';
-    let cy = y;
+    // Centre the chip stack vertically on the icon band.
+    const total = chips.length * chipH + Math.max(0, chips.length - 1) * gap;
+    let cy = y + Math.max(0, (maxH - total) / 2);
     for (const chip of chips) {
       if (cy + chipH > y + maxH) break;
       let text = chip.text;
@@ -725,7 +753,9 @@ export class ShareImageService {
         text = this.truncate(ctx, chip.text, width - 16);
         tw = ctx.measureText(text).width + 16;
       }
-      this.roundRect(ctx, x, cy, tw, chipH, 4);
+      // Centre each chip horizontally in the strip.
+      const cx = x + (width - tw) / 2;
+      this.roundRect(ctx, cx, cy, tw, chipH, 4);
       ctx.fillStyle = chip.fill;
       ctx.fill();
       if (chip.border) {
@@ -734,7 +764,7 @@ export class ShareImageService {
         ctx.stroke();
       }
       ctx.fillStyle = chip.color;
-      ctx.fillText(text, x + 8, cy + 15);
+      ctx.fillText(text, cx + 8, cy + 15);
       cy += chipH + gap;
     }
   }
@@ -795,8 +825,6 @@ export class ShareImageService {
     ctx.font = '600 20px Inter, sans-serif';
     ctx.textAlign = 'left';
     ctx.fillText('Mabu Builds Maker', 48, height - 24);
-    ctx.textAlign = 'right';
-    ctx.fillText('https://meabuelgheit.github.io/MabuBuildsMaker/', width - 48, height - 24);
     ctx.textAlign = 'left';
   }
 
