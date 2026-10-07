@@ -42,7 +42,9 @@ const COLLECTION_ICON_PX = 168;
 const CACHE_LIMIT = 200;
 /** Shared geometry for the collection (zen-style) card. */
 const COL_PAD = 48;
-const COL_STATUS_W = 120;
+/** Bounds for the measured status/tags column width (px). */
+const COL_STATUS_MIN = 130;
+const COL_STATUS_MAX = 220;
 const COL_ICON_GAP = 8;
 const COL_GAP = 32;
 const COL_WIDTH_CAP = 2600;
@@ -135,9 +137,11 @@ export class ShareImageService {
     // Widen the canvas to keep big icons; only shrink icons past the width cap.
     const iconGap = COL_ICON_GAP;
     let iconSize = 96;
-    const swapSize = 48;
+    const swapSize = 60;
+    // Measure the widest chip so the status column never truncates it.
+    const statusW = this.measureStatusWidth(builds);
     const measureCol = (icon: number) =>
-      COL_STATUS_W + this.slots.length * icon + (this.slots.length - 1) * iconGap;
+      statusW + this.slots.length * icon + (this.slots.length - 1) * iconGap;
     let colW = measureCol(iconSize);
     let width = Math.max(1200, 2 * COL_PAD + columns * colW + (columns - 1) * COL_GAP);
     if (width > COL_WIDTH_CAP) {
@@ -145,7 +149,7 @@ export class ShareImageService {
         COL_WIDTH_CAP -
         2 * COL_PAD -
         (columns - 1) * COL_GAP -
-        columns * COL_STATUS_W -
+        columns * statusW -
         columns * (this.slots.length - 1) * iconGap;
       iconSize = Math.max(32, Math.floor(avail / (columns * this.slots.length)));
       colW = measureCol(iconSize);
@@ -162,7 +166,7 @@ export class ShareImageService {
       rowsUsed,
       iconSize,
       swapSize,
-      statusW: COL_STATUS_W,
+      statusW,
       iconGap,
       colW,
       colGap: COL_GAP,
@@ -203,6 +207,37 @@ export class ShareImageService {
       for (const swap of build.swaps?.[slot.swap] ?? []) items.push(swap);
     }
     return items;
+  }
+
+  /**
+   * Measures the widest status chip (tags, tier, literal "Approval Only") at the
+   * chip font and returns a clamped column width so no chip is truncated.
+   */
+  private measureStatusWidth(builds: PlayerBuild[]): number {
+    const texts: string[] = ['Approval Only'];
+    for (const build of builds) {
+      for (const tag of build.tags ?? []) texts.push(tag);
+      if (build.minTier) texts.push(build.minTier);
+    }
+    let widest = 0;
+    const ctx = this.measureContext();
+    if (ctx) {
+      ctx.font = '700 13px Inter, sans-serif';
+      for (const text of texts) widest = Math.max(widest, ctx.measureText(text).width + 16);
+    } else {
+      // SSR fallback: no canvas, mirror the floor's usable chip width.
+      widest = COL_STATUS_MIN - 20;
+    }
+    return Math.min(COL_STATUS_MAX, Math.max(COL_STATUS_MIN, widest + 20));
+  }
+
+  /** Small scratch 2D context used to measure text before the card canvas exists. */
+  private measureContext(): CanvasRenderingContext2D | null {
+    if (typeof document === 'undefined') return null;
+    const canvas = document.createElement('canvas');
+    canvas.width = 1;
+    canvas.height = 1;
+    return canvas.getContext('2d');
   }
 
   /** Loads the active background image (preference data URL, else the default). */
@@ -377,7 +412,7 @@ export class ShareImageService {
     const usable = width - 2 * padX;
     const slotW = (usable - slotGap * 6) / 7;
     const iconSize = 132;
-    const swapSize = 56;
+    const swapSize = 68;
     const slotTop = 196;
     for (let i = 0; i < this.slots.length; i++) {
       const slot = this.slots[i];
@@ -414,10 +449,14 @@ export class ShareImageService {
     this.fillTextSpaced(ctx, (collection.name || 'Untitled').toUpperCase(), width / 2, 92, 3);
     ctx.textAlign = 'left';
 
+    // Centre the whole column block horizontally inside the canvas.
+    const blockW = columns * colW + (columns - 1) * colGap;
+    const startX = Math.round((width - blockW) / 2);
+
     collection.builds.forEach((build, idx) => {
       const col = Math.floor(idx / perColumn);
       const row = idx % perColumn;
-      const colX = COL_PAD + col * (colW + colGap);
+      const colX = startX + col * (colW + colGap);
       const rowY = headerH + row * rowH;
 
       // Row panel (zen tint).
@@ -441,8 +480,9 @@ export class ShareImageService {
           // Swaps as small overlays on the bottom-right of the main icon.
           const swaps = build.swaps?.[slot.swap] ?? [];
           swaps.slice(0, 2).forEach((swap, j) => {
-            const sx = ix + iconSize - swapSize + j * 12;
-            const sy = iconTop + iconSize - swapSize + j * 12;
+            // Stagger of 8 px keeps the pair flush with the next icon (gap is 8).
+            const sx = ix + iconSize - swapSize + j * 8;
+            const sy = iconTop + iconSize - swapSize + j * 8;
             this.drawTile(ctx, sx, sy, swapSize, swap, COLLECTION_ICON_PX, 0, showTierLabels);
           });
         }
