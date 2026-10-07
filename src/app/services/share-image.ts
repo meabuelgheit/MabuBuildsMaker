@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import {
   BuildCollection,
   BuildSwap,
@@ -6,6 +6,7 @@ import {
   PlayerBuild,
   tierLabel,
 } from '../shared/models/item';
+import { PreferencesService } from './preferences';
 
 /** Result of rendering a share image. */
 export interface ShareResult {
@@ -34,6 +35,8 @@ const MUTED = '#a1a1aa';
 const BORDER = '#27272a';
 const ICON_REQUEST_PX = 217;
 const COLLECTION_ICON_PX = 128;
+/** Maximum cached icon bitmaps; oldest unpinned entries are evicted (and closed). */
+const CACHE_LIMIT = 200;
 
 /** Maps each visible slot to its single-item field and swap bucket. */
 interface SlotSpec {
@@ -48,8 +51,12 @@ interface SlotSpec {
 @Injectable({ providedIn: 'root' })
 export class ShareImageService {
   private cache = new Map<string, ImageBitmap | null>();
+  /** Keys an in-flight render still needs; never evicted/closed until it ends. */
+  private pinned = new Set<string>();
   private fontsReady = false;
   private missingIcons = 0;
+
+  private preferences = inject(PreferencesService);
 
   /** Counters for the most recent render call. */
   readonly lastStats: ShareStats = { bytesFetched: 0, iconRequests: 0 };
@@ -71,14 +78,18 @@ export class ShareImageService {
     const width = 1200;
     const height = 630;
     const items = this.collectItems(build);
-    await this.preload(items, ICON_REQUEST_PX);
-    const canvas = this.createCanvas(width, height);
-    const ctx = canvas.getContext('2d')!;
-    ctx.fillStyle = PANEL;
-    ctx.fillRect(0, 0, width, height);
-    this.drawBuildCard(ctx, build, opts?.subtitle, width, height);
-    const blob = await this.toBlob(canvas);
-    return { blob, width, height, missingIcons: this.missingIcons };
+    const keys = await this.preload(items, ICON_REQUEST_PX);
+    try {
+      const canvas = this.createCanvas(width, height);
+      const ctx = canvas.getContext('2d')!;
+      ctx.fillStyle = PANEL;
+      ctx.fillRect(0, 0, width, height);
+      this.drawBuildCard(ctx, build, opts?.subtitle, width, height, this.preferences.showTierLabels);
+      const blob = await this.toBlob(canvas);
+      return { blob, width, height, missingIcons: this.missingIcons };
+    } finally {
+      this.unpin(keys);
+    }
   }
 
   /** Renders a collection card (1200 wide, dynamic height). */
@@ -96,15 +107,19 @@ export class ShareImageService {
 
     const items: GearItem[] = [];
     for (const b of builds) items.push(...this.collectItems(b));
-    await this.preload(items, COLLECTION_ICON_PX);
+    const keys = await this.preload(items, COLLECTION_ICON_PX);
 
-    const canvas = this.createCanvas(width, height);
-    const ctx = canvas.getContext('2d')!;
-    ctx.fillStyle = PANEL;
-    ctx.fillRect(0, 0, width, height);
-    this.drawCollectionCard(ctx, collection, width, height, rowH, headerH, twoCols);
-    const blob = await this.toBlob(canvas);
-    return { blob, width, height, missingIcons: this.missingIcons };
+    try {
+      const canvas = this.createCanvas(width, height);
+      const ctx = canvas.getContext('2d')!;
+      ctx.fillStyle = PANEL;
+      ctx.fillRect(0, 0, width, height);
+      this.drawCollectionCard(ctx, collection, width, height, rowH, headerH, twoCols, this.preferences.showTierLabels);
+      const blob = await this.toBlob(canvas);
+      return { blob, width, height, missingIcons: this.missingIcons };
+    } finally {
+      this.unpin(keys);
+    }
   }
 
   // --- rendering internals -------------------------------------------------
@@ -132,6 +147,7 @@ export class ShareImageService {
     subtitle: string | undefined,
     width: number,
     height: number,
+    showTierLabels: boolean,
   ): void {
     const padX = 48;
     // Header panel
@@ -162,19 +178,52 @@ export class ShareImageService {
       ctx.fillText(this.truncate(ctx, subtitle, width - padX * 2 - 200), padX + 8, 126);
     }
 
-    // Tags (right-aligned in header)
+    // Tags: bounded to the right ~45% of the card so they never run into the title.
     if (build.tags?.length) {
       ctx.font = '600 16px Inter, sans-serif';
-      let tagX = width - padX;
-      for (const tag of [...build.tags].reverse()) {
-        const tw = ctx.measureText(tag).width + 24;
-        tagX -= tw;
-        this.roundRect(ctx, tagX, 70, tw, 30, 15);
+      const tagGap = 8;
+      const tagRight = width - padX;
+      const maxTagWidth = width * 0.45;
+      const areaLeft = tagRight - maxTagWidth;
+      const tags = build.tags;
+      // Pass 1: pick the trailing tags that fit (drawn right-to-left).
+      const fits: { text: string; tw: number }[] = [];
+      let used = 0;
+      for (let i = tags.length - 1; i >= 0; i--) {
+        let text = tags[i];
+        let tw = ctx.measureText(text).width + 24;
+        if (tw > maxTagWidth) {
+          text = this.truncate(ctx, tags[i], maxTagWidth - 24);
+          tw = ctx.measureText(text).width + 24;
+        }
+        const add = tw + (fits.length ? tagGap : 0);
+        if (used + add > maxTagWidth) break;
+        fits.push({ text, tw });
+        used += add;
+      }
+      const dropped = tags.length - fits.length;
+      // Pass 2: draw the fitted chips right-to-left.
+      let tagX = tagRight;
+      for (const fit of fits) {
+        const left = tagX - fit.tw;
+        this.roundRect(ctx, left, 70, fit.tw, 30, 15);
         ctx.fillStyle = '#27272a';
         ctx.fill();
         ctx.fillStyle = TEXT;
-        ctx.fillText(tag, tagX + 12, 90);
-        tagX -= 8;
+        ctx.fillText(fit.text, left + 12, 90);
+        tagX = left - tagGap;
+      }
+      // Optional overflow indicator for the dropped tags.
+      if (dropped > 0) {
+        const plusText = '+' + dropped;
+        const plusW = ctx.measureText(plusText).width + 20;
+        if (tagX - plusW >= areaLeft) {
+          this.roundRect(ctx, tagX - plusW, 70, plusW, 30, 15);
+          ctx.fillStyle = '#3f3f46';
+          ctx.fill();
+          ctx.fillStyle = TEXT;
+          ctx.fillText(plusText, tagX - plusW + 10, 90);
+        }
       }
     }
 
@@ -189,14 +238,14 @@ export class ShareImageService {
       const slotX = padX + i * (slotW + slotGap);
       const tileX = slotX + (slotW - iconSize) / 2;
       const main = build[slot.field] as GearItem | null;
-      this.drawTile(ctx, tileX, slotTop, iconSize, main, ICON_REQUEST_PX, 20);
+      this.drawTile(ctx, tileX, slotTop, iconSize, main, ICON_REQUEST_PX, 20, showTierLabels);
 
       const swaps = build.swaps?.[slot.swap] ?? [];
       const smallSize = 42;
       let sx = tileX;
       const sy = slotTop + iconSize + 36;
       for (const swap of swaps.slice(0, 3)) {
-        this.drawTile(ctx, sx, sy, smallSize, swap, ICON_REQUEST_PX, 12);
+        this.drawTile(ctx, sx, sy, smallSize, swap, ICON_REQUEST_PX, 12, showTierLabels);
         sx += smallSize + 6;
       }
     }
@@ -212,6 +261,7 @@ export class ShareImageService {
     rowH: number,
     headerH: number,
     twoCols: boolean,
+    showTierLabels: boolean,
   ): void {
     const padX = 48;
     // Header
@@ -258,7 +308,7 @@ export class ShareImageService {
         const main = build[slot.field] as GearItem | null;
         const ix = iconAreaX + i * step + Math.max(0, (step - iconSize) / 2);
         if (main) {
-          this.drawTile(ctx, ix, iy, iconSize, main, COLLECTION_ICON_PX, 12);
+          this.drawTile(ctx, ix, iy, iconSize, main, COLLECTION_ICON_PX, 12, showTierLabels);
         }
       }
     });
@@ -275,6 +325,7 @@ export class ShareImageService {
     item: GearItem | null,
     px: number,
     tierFont: number,
+    showTierLabels: boolean,
   ): void {
     // Tile background
     this.roundRect(ctx, x, y, size, size, Math.max(6, size * 0.12));
@@ -301,8 +352,8 @@ export class ShareImageService {
       ctx.textAlign = 'left';
     }
 
-    // Tier label beneath
-    if (tierFont > 0) {
+    // Tier label beneath (hidden by preference; placeholders keep theirs above)
+    if (tierFont > 0 && showTierLabels) {
       ctx.fillStyle = GOLD;
       ctx.font = `700 ${tierFont}px Inter, sans-serif`;
       ctx.textAlign = 'center';
@@ -406,12 +457,18 @@ export class ShareImageService {
   }
 
   /** Preloads + caches the bitmaps for a set of items at a request size. */
-  private async preload(items: GearItem[], px: number): Promise<void> {
+  private async preload(items: GearItem[], px: number): Promise<string[]> {
     const unique = new Map<string, string>();
     for (const item of items) unique.set(`${item.id}@${px}`, item.id);
-    await Promise.all(
-      Array.from(unique.entries()).map(([key, id]) => this.loadBitmap(id, px, key)),
-    );
+    const keys = Array.from(unique.keys());
+    for (const key of keys) this.pinned.add(key);
+    await Promise.all(keys.map((key) => this.loadBitmap(unique.get(key)!, px, key)));
+    return keys;
+  }
+
+  /** Releases the pin on keys once a render has finished drawing. */
+  private unpin(keys: string[]): void {
+    for (const key of keys) this.pinned.delete(key);
   }
 
   private async loadBitmap(id: string, px: number, key: string): Promise<ImageBitmap | null> {
@@ -419,8 +476,29 @@ export class ShareImageService {
     let bmp = await this.fetchBitmap(id, px, 'webp');
     if (!bmp) bmp = await this.fetchBitmap(id, px, 'png');
     this.cache.set(key, bmp);
+    this.evictIfNeeded(key);
     if (!bmp) this.missingIcons++;
     return bmp;
+  }
+
+  /**
+   * Caps the bitmap cache with oldest-first eviction, closing freed bitmaps.
+   * Never closes the just-inserted key or one pinned by an in-flight render.
+   */
+  private evictIfNeeded(justInsertedKey: string): void {
+    while (this.cache.size > CACHE_LIMIT) {
+      let evictKey: string | null = null;
+      for (const candidate of this.cache.keys()) {
+        if (candidate === justInsertedKey) continue;
+        if (this.pinned.has(candidate)) continue;
+        evictKey = candidate;
+        break;
+      }
+      if (!evictKey) break; // everything else is still pinned
+      const bmp = this.cache.get(evictKey);
+      if (bmp) bmp.close();
+      this.cache.delete(evictKey);
+    }
   }
 
   private async fetchBitmap(

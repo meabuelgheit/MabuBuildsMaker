@@ -26,6 +26,11 @@
     padding: 8px 12px; border-radius: 4px; font-size: 0.95rem; min-width: 160px;
     &:focus { outline: none; border-color: #d4af37; }
   }
+
+  .pref-checkbox {
+    width: 20px; height: 20px; accent-color: #d4af37; cursor: pointer;
+    &:focus-visible { outline: 2px solid #d4af37; outline-offset: 2px; }
+  }
 }
 
 .bg-preview-wrapper {

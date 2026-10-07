@@ -50,6 +50,21 @@
         }
       </select>
     </div>
+
+    <div class="pref-row">
+      <label class="pref-label" for="showTierLabels">Show item tier labels (e.g. 8.3)</label>
+      <input
+        type="checkbox"
+        id="showTierLabels"
+        name="showTierLabels"
+        class="pref-checkbox"
+        [ngModel]="preferences.showTierLabels"
+        (ngModelChange)="preferences.setShowTierLabels($event)"
+      />
+    </div>
+    <p class="section-hint">
+      The hover tooltip still shows the full item name when tier labels are hidden.
+    </p>
   </section>
 
   <section class="settings-section">

@@ -62,7 +62,9 @@
               loading="lazy"
               decoding="async"
             />
-            <span class="slot-tier">{{ tierLabel(item.name) }}</span>
+            @if (preferences.showTierLabels) {
+              <span class="slot-tier">{{ tierLabel(item.name) }}</span>
+            }
           }
           @if (!hideUI && !item) {
             <span class="empty-text">{{ slot.placeholder }}</span>

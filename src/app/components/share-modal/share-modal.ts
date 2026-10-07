@@ -7,6 +7,8 @@ import {
   SimpleChanges,
   HostListener,
   ChangeDetectorRef,
+  ElementRef,
+  ViewChild,
   inject,
 } from '@angular/core';
 import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
@@ -44,15 +46,49 @@ export class ShareModal implements OnChanges {
 
   private rawUrl: string | null = null;
   private renderToken = 0;
+  /** Element that opened the modal, so focus can return to it on close. */
+  private opener: HTMLElement | null = null;
+  private panel: ElementRef<HTMLElement> | null = null;
+
+  @ViewChild('panel')
+  set panelRef(ref: ElementRef<HTMLElement> | undefined) {
+    this.panel = ref ?? null;
+  }
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['open']) {
       if (this.open) {
+        this.captureAndFocus();
         this.startRender();
       } else {
         this.cleanup();
       }
     }
+  }
+
+  /** Title describing the rendered content. */
+  get title(): string {
+    const req = this.request;
+    if (!req) return 'Share';
+    if (req.kind === 'build') return 'Share build';
+    return req.collection.type === 'group' ? 'Share group' : 'Share party';
+  }
+
+  /** Remembers the opener and moves focus into the modal panel. */
+  private captureAndFocus(): void {
+    if (typeof document === 'undefined') return;
+    this.opener = (document.activeElement as HTMLElement) ?? null;
+    setTimeout(() => {
+      if (this.open) this.panel?.nativeElement.focus();
+    }, 0);
+  }
+
+  /** Returns focus to the element that opened the modal (if still present). */
+  private restoreFocus(): void {
+    if (typeof document === 'undefined') return;
+    const el = this.opener;
+    this.opener = null;
+    if (el && el.isConnected && typeof el.focus === 'function') el.focus();
   }
 
   /** True when the browser can write images to the clipboard. */
@@ -132,6 +168,7 @@ export class ShareModal implements OnChanges {
     this.state = 'idle';
     this.result = null;
     this.errorMessage = '';
+    this.restoreFocus();
   }
 
   private setImage(blob: Blob): void {
