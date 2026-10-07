@@ -13,13 +13,14 @@ import { StorageService } from './storage';
 interface PreferencesState {
   tierPreferences: TierPreferences;
   backgroundImage: string | null;
-  buildsPerColumn: number;
+  buildsPerColumn: number | null;
 }
 
-/** Clamps a builds-per-column value into the supported 1-20 range. */
-function clampBuildsPerColumn(value: unknown): number {
+/** Clamps a builds-per-column value into 1-20; null/absent means Auto. */
+function clampBuildsPerColumn(value: unknown): number | null {
+  if (value === null || value === undefined || value === '') return null;
   const num = typeof value === 'number' ? value : Number(value);
-  if (!Number.isFinite(num)) return 10;
+  if (!Number.isFinite(num)) return null;
   return Math.min(20, Math.max(1, Math.round(num)));
 }
 
@@ -45,7 +46,8 @@ function defaultTierPreferences(): TierPreferences {
 export class PreferencesService {
   tierPreferences: TierPreferences = defaultTierPreferences();
   backgroundImage: string | null = null;
-  buildsPerColumn = 10;
+  /** `null` = Auto (party 10 / group 6); a number is an explicit override. */
+  buildsPerColumn: number | null = null;
 
   private platformId = inject(PLATFORM_ID);
   private storage = inject(StorageService);
@@ -61,14 +63,40 @@ export class PreferencesService {
     };
     this.backgroundImage =
       typeof state.backgroundImage === 'string' ? state.backgroundImage : null;
-    this.buildsPerColumn = clampBuildsPerColumn(state.buildsPerColumn ?? 10);
+    this.buildsPerColumn = clampBuildsPerColumn(state.buildsPerColumn);
     this.applyBackground();
   }
 
-  /** Sets the builds-per-column count (clamped to 1-20) and persists. */
-  setBuildsPerColumn(value: number): void {
+  /** Sets the builds-per-column count (`null` = Auto) and persists. */
+  setBuildsPerColumn(value: number | null): void {
     this.buildsPerColumn = clampBuildsPerColumn(value);
     this.persist();
+  }
+
+  /** Returns a serializable copy of all preferences for export. */
+  snapshot(): {
+    tierPreferences: TierPreferences;
+    backgroundImage: string | null;
+    buildsPerColumn: number | null;
+  } {
+    return {
+      tierPreferences: { ...this.tierPreferences },
+      backgroundImage: this.backgroundImage,
+      buildsPerColumn: this.buildsPerColumn,
+    };
+  }
+
+  /** Replaces all preferences from an imported backup and persists. */
+  replaceAll(prefs: Partial<PreferencesState> | null | undefined): void {
+    this.tierPreferences = {
+      ...defaultTierPreferences(),
+      ...(prefs?.tierPreferences ?? {}),
+    };
+    this.backgroundImage =
+      typeof prefs?.backgroundImage === 'string' ? prefs.backgroundImage : null;
+    this.buildsPerColumn = clampBuildsPerColumn(prefs?.buildsPerColumn);
+    this.persist();
+    this.applyBackground();
   }
 
   /** Sets a slot preference (`null` = ask each time) and persists. */

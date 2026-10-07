@@ -12,6 +12,9 @@
       *ngIf="step === 'base'"
       type="text"
       class="search-bar"
+      [id]="'item-search-' + instanceId"
+      name="itemSearch"
+      aria-label="Search items"
       placeholder="Search items..."
       [(ngModel)]="searchQuery"
     />

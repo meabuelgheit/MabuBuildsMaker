@@ -21,6 +21,9 @@ import {
 import { GearData } from '../../services/gear-data';
 import { PreferencesService } from '../../services/preferences';
 
+/** Monotonic counter giving each selector instance a stable, unique DOM id. */
+let itemSelectorInstanceCounter = 0;
+
 @Component({
   selector: 'app-item-selector',
   standalone: true,
@@ -43,6 +46,9 @@ export class ItemSelector implements OnInit, OnDestroy {
 
   step: 'base' | 'tier' = 'base';
   selectedGroup: GroupedItem | null = null;
+
+  /** Unique id fragment used to disambiguate DOM ids across instances. */
+  readonly instanceId = ++itemSelectorInstanceCounter;
 
   private platformId = inject(PLATFORM_ID);
   private preferences = inject(PreferencesService);

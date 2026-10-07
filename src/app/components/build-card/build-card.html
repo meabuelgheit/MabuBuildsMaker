@@ -3,6 +3,9 @@
     <input
       *ngIf="!hideUI"
       class="build-title-input"
+      [id]="'build-title-' + build.id"
+      name="buildTitle"
+      aria-label="Build name"
       [(ngModel)]="build.title"
       (ngModelChange)="touch()"
       placeholder="Build Name..."
@@ -19,6 +22,9 @@
       <input
         *ngIf="!hideUI"
         class="tag-input"
+        [id]="'tag-input-' + build.id"
+        name="buildTag"
+        aria-label="Add tag"
         [(ngModel)]="newTag"
         (keydown.enter)="addTag($event)"
         placeholder="+ Tag"

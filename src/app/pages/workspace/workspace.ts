@@ -2,10 +2,11 @@ import { Component, ChangeDetectorRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { BuildCard } from '../../components/build-card/build-card';
-import { PlayerBuild } from '../../shared/models/item';
-import { WorkspaceService, upgradeCollection } from '../../services/workspace';
+import { BuildCollection, PlayerBuild } from '../../shared/models/item';
+import { WorkspaceService, upgradeBuild, upgradeCollection } from '../../services/workspace';
 import { UiStateService } from '../../services/ui-state';
 import { PreferencesService } from '../../services/preferences';
+import { LibraryService } from '../../services/library';
 
 /**
  * Workspace page: creates collections, edits their builds and handles
@@ -24,6 +25,8 @@ export class WorkspacePage {
   uiState = inject(UiStateService);
   /** Layout preference: builds per grid column. */
   preferences = inject(PreferencesService);
+  /** Saved-builds library, included in full backups. */
+  library = inject(LibraryService);
 
   isTrashModalOpen = false;
   isTargetModalOpen = false;
@@ -172,23 +175,41 @@ export class WorkspacePage {
     this.closeTargetModal();
   }
 
-  /** Downloads the current collections as a JSON file. */
+  /** Resolves the effective builds-per-column for a collection (Auto fallback). */
+  buildsPerColumnFor(collection: BuildCollection): number {
+    return (
+      this.preferences.buildsPerColumn ?? (collection.type === 'party' ? 10 : 6)
+    );
+  }
+
+  /** Downloads a full backup (workspace + library + preferences) as JSON. */
   exportData() {
-    if (this.workspace.collections.length === 0) {
-      alert('No builds to export!');
+    if (
+      this.workspace.collections.length === 0 &&
+      this.library.savedBuilds.length === 0
+    ) {
+      alert('Nothing to export!');
       return;
     }
-    const dataStr = JSON.stringify(this.workspace.collections, null, 2);
+    const backup = {
+      app: 'MabuBuildsMaker',
+      version: 2,
+      exportedAt: Date.now(),
+      ...this.workspace.snapshot(),
+      savedBuilds: this.library.snapshot(),
+      preferences: this.preferences.snapshot(),
+    };
+    const dataStr = JSON.stringify(backup, null, 2);
     const blob = new Blob([dataStr], { type: 'application/json' });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'mabu-builds.json';
+    a.download = 'mabu-builds-backup.json';
     a.click();
     window.URL.revokeObjectURL(url);
   }
 
-  /** Imports collections from JSON, upgrading legacy shapes. */
+  /** Imports a legacy array or a full backup object, upgrading on the way in. */
   importData(event: any) {
     const file = event.target.files[0];
     if (!file) return;
@@ -196,18 +217,45 @@ export class WorkspacePage {
     const reader = new FileReader();
     reader.onload = (e) => {
       try {
-        const importedCollections = JSON.parse(e.target?.result as string);
+        const parsed = JSON.parse(e.target?.result as string);
 
-        if (Array.isArray(importedCollections)) {
-          const upgradedCollections = importedCollections.map((c: any) =>
+        if (Array.isArray(parsed)) {
+          // Legacy: a bare array of collections appended to the workspace.
+          const upgradedCollections = parsed.map((c: any) =>
             upgradeCollection(c),
           );
-
           this.workspace.collections = [
             ...this.workspace.collections,
             ...upgradedCollections,
           ];
           this.workspace.touch();
+          this.cdr.detectChanges();
+        } else if (
+          parsed &&
+          typeof parsed === 'object' &&
+          Array.isArray(parsed.collections)
+        ) {
+          // Full backup: replace everything.
+          if (!confirm('Replace all current data with this backup?')) {
+            event.target.value = '';
+            return;
+          }
+          this.workspace.replaceAll({
+            collections: parsed.collections.map((c: any) => upgradeCollection(c)),
+            trashedBuilds: Array.isArray(parsed.trashedBuilds)
+              ? parsed.trashedBuilds.map((b: any) => upgradeBuild(b))
+              : [],
+            archivedCollections: Array.isArray(parsed.archivedCollections)
+              ? parsed.archivedCollections.map((a: any) => ({
+                  archivedAt: a?.archivedAt ?? Date.now(),
+                  collection: upgradeCollection(a?.collection),
+                }))
+              : [],
+          });
+          this.library.replaceAll(
+            Array.isArray(parsed.savedBuilds) ? parsed.savedBuilds : [],
+          );
+          this.preferences.replaceAll(parsed.preferences ?? {});
           this.cdr.detectChanges();
         } else {
           alert('Invalid file format.');

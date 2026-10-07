@@ -8,6 +8,9 @@
     <input
       class="search-bar"
       type="text"
+      id="librarySearch"
+      name="librarySearch"
+      aria-label="Search saved builds"
       [(ngModel)]="searchQuery"
       placeholder="Search saved builds..."
     />
@@ -31,6 +34,9 @@
         <ng-template #editName>
           <input
             class="rename-input"
+            [id]="'rename-' + entry.id"
+            name="savedBuildName"
+            aria-label="Saved build name"
             [(ngModel)]="editingName"
             (keydown.enter)="commitRename()"
             (blur)="commitRename()"

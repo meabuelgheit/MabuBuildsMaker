@@ -62,6 +62,17 @@ export class LibraryService {
     );
   }
 
+  /** Returns a serializable copy of the saved-builds library. */
+  snapshot(): SavedBuild[] {
+    return this.savedBuilds;
+  }
+
+  /** Replaces the library from a backup and persists. */
+  replaceAll(savedBuilds: SavedBuild[]): void {
+    this.savedBuilds = Array.isArray(savedBuilds) ? savedBuilds : [];
+    this.persist();
+  }
+
   private persist(): void {
     this.storage.write(StorageService.LIBRARY_KEY, this.savedBuilds);
   }

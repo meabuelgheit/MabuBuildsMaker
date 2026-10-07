@@ -3,6 +3,9 @@
     <input
       type="file"
       #fileInput
+      id="importFile"
+      name="importFile"
+      aria-label="Import backup JSON"
       (change)="importData($event)"
       accept=".json"
       style="display: none"
@@ -40,6 +43,9 @@
       <div class="collection-header" *ngIf="!uiState.hideUI">
         <input
           class="collection-name-input"
+          [id]="'collection-name-' + collection.id"
+          name="collectionName"
+          aria-label="Collection name"
           [(ngModel)]="collection.name"
           (ngModelChange)="workspace.touch()"
           placeholder="Custom Name..."
@@ -73,7 +79,7 @@
       <div
         class="build-list"
         [ngClass]="collection.type"
-        [style.--builds-per-column]="preferences.buildsPerColumn"
+        [style.--builds-per-column]="buildsPerColumnFor(collection)"
       >
         <app-build-card
           *ngFor="let build of collection.builds; let i = index"

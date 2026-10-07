@@ -108,6 +108,35 @@ export class WorkspaceService {
     this.persist();
   }
 
+  /** Returns a serializable copy of the entire workspace state. */
+  snapshot(): {
+    collections: BuildCollection[];
+    trashedBuilds: PlayerBuild[];
+    archivedCollections: ArchivedCollection[];
+  } {
+    return {
+      collections: this.collections,
+      trashedBuilds: this.trashedBuilds,
+      archivedCollections: this.archivedCollections,
+    };
+  }
+
+  /** Replaces the entire workspace from a backup and persists. */
+  replaceAll(state: {
+    collections?: BuildCollection[];
+    trashedBuilds?: PlayerBuild[];
+    archivedCollections?: ArchivedCollection[];
+  }): void {
+    this.collections = Array.isArray(state?.collections) ? state.collections : [];
+    this.trashedBuilds = Array.isArray(state?.trashedBuilds)
+      ? state.trashedBuilds
+      : [];
+    this.archivedCollections = Array.isArray(state?.archivedCollections)
+      ? state.archivedCollections
+      : [];
+    this.persist();
+  }
+
   findCollection(id: string): BuildCollection | undefined {
     return this.collections.find((c) => c.id === id);
   }

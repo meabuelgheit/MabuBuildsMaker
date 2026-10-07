@@ -34,6 +34,8 @@ export class SettingsPage implements OnInit {
   catalog: GearItem[] = [];
   errorMessage = '';
   successMessage = '';
+  /** Selectable explicit builds-per-column values (Auto is `null`). */
+  readonly columnOptions: number[] = Array.from({ length: 20 }, (_, i) => i + 1);
 
   /** Loads the gear catalog only in the browser (prerender-safe). */
   ngOnInit(): void {
