@@ -5,6 +5,7 @@ import { BuildCard } from '../../components/build-card/build-card';
 import { PlayerBuild } from '../../shared/models/item';
 import { WorkspaceService, upgradeCollection } from '../../services/workspace';
 import { UiStateService } from '../../services/ui-state';
+import { PreferencesService } from '../../services/preferences';
 
 /**
  * Workspace page: creates collections, edits their builds and handles
@@ -21,6 +22,8 @@ export class WorkspacePage {
   workspace = inject(WorkspaceService);
   /** Shared zen-mode visibility flag drives hidden-view rendering. */
   uiState = inject(UiStateService);
+  /** Layout preference: builds per grid column. */
+  preferences = inject(PreferencesService);
 
   isTrashModalOpen = false;
   isTargetModalOpen = false;

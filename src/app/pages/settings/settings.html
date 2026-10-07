@@ -26,6 +26,26 @@
   </section>
 
   <section class="settings-section">
+    <h3 class="section-title">Layout</h3>
+    <p class="section-hint">
+      How many builds appear per column. Columns fill automatically as you add builds.
+    </p>
+
+    <div class="pref-row">
+      <label class="pref-label" for="buildsPerColumn">Builds per column</label>
+      <input
+        id="buildsPerColumn"
+        class="pref-number"
+        type="number"
+        min="1"
+        max="20"
+        [ngModel]="preferences.buildsPerColumn"
+        (ngModelChange)="preferences.setBuildsPerColumn($event)"
+      />
+    </div>
+  </section>
+
+  <section class="settings-section">
     <h3 class="section-title">Background</h3>
     <p class="section-hint">The image is stored only in this browser.</p>
 

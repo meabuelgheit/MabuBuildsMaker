@@ -1,6 +1,7 @@
 :host {
   display: flex; flex-direction: column; min-height: 100vh;
-  background-color: transparent; color: #e2e8f0; font-family: sans-serif;
+  background-color: transparent; color: #e2e8f0;
+  font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
 }
 
 .toolbar-wrapper {

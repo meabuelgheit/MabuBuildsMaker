@@ -70,7 +70,11 @@
         <h2 class="view-only-title">{{ collection.name }}</h2>
       </div>
 
-      <div class="build-list" [ngClass]="collection.type">
+      <div
+        class="build-list"
+        [ngClass]="collection.type"
+        [style.--builds-per-column]="preferences.buildsPerColumn"
+      >
         <app-build-card
           *ngFor="let build of collection.builds; let i = index"
           [build]="build"

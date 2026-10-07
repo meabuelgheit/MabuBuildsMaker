@@ -1,5 +1,29 @@
 @use "sass:color";
 
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('./fonts/Inter-Regular.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('./fonts/Inter-SemiBold.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('./fonts/Inter-Bold.woff2') format('woff2');
+}
+
 :root {
   --app-bg-image: url('../public/Background.jpg');
 }
@@ -9,6 +33,7 @@ body {
   padding: 0;
   min-height: 100vh;
   width: 100%;
+  font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
 
   background-image: linear-gradient(
       rgba(0, 0, 0, 0.75), 
@@ -61,16 +86,8 @@ body {
   gap: 8px 48px;
   justify-content: center;
   grid-auto-flow: column;
-
-  &.party {
-    grid-template-rows: repeat(10, min-content);
-    grid-template-columns: repeat(2, max-content);
-  }
-
-  &.group {
-    grid-template-rows: repeat(6, min-content);
-    grid-template-columns: repeat(2, max-content);
-  }
+  grid-auto-columns: max-content;
+  grid-template-rows: repeat(var(--builds-per-column, 10), min-content);
 
   @media (max-width: 1900px) {
     grid-auto-flow: row;

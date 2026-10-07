@@ -13,6 +13,14 @@ import { StorageService } from './storage';
 interface PreferencesState {
   tierPreferences: TierPreferences;
   backgroundImage: string | null;
+  buildsPerColumn: number;
+}
+
+/** Clamps a builds-per-column value into the supported 1-20 range. */
+function clampBuildsPerColumn(value: unknown): number {
+  const num = typeof value === 'number' ? value : Number(value);
+  if (!Number.isFinite(num)) return 10;
+  return Math.min(20, Math.max(1, Math.round(num)));
 }
 
 /** All preference slots with a `null` (ask each time) default. */
@@ -37,6 +45,7 @@ function defaultTierPreferences(): TierPreferences {
 export class PreferencesService {
   tierPreferences: TierPreferences = defaultTierPreferences();
   backgroundImage: string | null = null;
+  buildsPerColumn = 10;
 
   private platformId = inject(PLATFORM_ID);
   private storage = inject(StorageService);
@@ -52,7 +61,14 @@ export class PreferencesService {
     };
     this.backgroundImage =
       typeof state.backgroundImage === 'string' ? state.backgroundImage : null;
+    this.buildsPerColumn = clampBuildsPerColumn(state.buildsPerColumn ?? 10);
     this.applyBackground();
+  }
+
+  /** Sets the builds-per-column count (clamped to 1-20) and persists. */
+  setBuildsPerColumn(value: number): void {
+    this.buildsPerColumn = clampBuildsPerColumn(value);
+    this.persist();
   }
 
   /** Sets a slot preference (`null` = ask each time) and persists. */
@@ -110,6 +126,7 @@ export class PreferencesService {
     this.storage.write(StorageService.PREFERENCES_KEY, {
       tierPreferences: this.tierPreferences,
       backgroundImage: this.backgroundImage,
+      buildsPerColumn: this.buildsPerColumn,
     } satisfies PreferencesState);
   }
 }
