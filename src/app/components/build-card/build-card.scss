@@ -132,6 +132,7 @@ $bg-hover: rgba(255, 255, 255, 0.04);
     &:disabled { opacity: 0.3; cursor: not-allowed; }
 
     &.copy-btn:hover { background: #0ea5e9; color: white; border-color: #38bdf8; }
+    &.save-btn:hover { background: #d4af37; color: #09090b; border-color: #d4af37; }
     &.delete-btn:hover { background: #9f1239; color: white; border-color: #be123c; }
   }
 }

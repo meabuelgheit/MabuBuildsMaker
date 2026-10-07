@@ -1,0 +1,51 @@
+<div class="content-wrapper settings-page">
+  <div class="page-heading">
+    <h2>Settings</h2>
+    <p class="hint">Preferences are stored only in this browser.</p>
+  </div>
+
+  <section class="settings-section">
+    <h3 class="section-title">Tier Preferences</h3>
+    <p class="section-hint">
+      Choose an exact tier for each slot. "Ask each time" keeps the current selection flow.
+    </p>
+
+    <div class="pref-row" *ngFor="let slot of slots">
+      <label class="pref-label">{{ slot.label }}</label>
+      <select
+        class="pref-select"
+        [ngModel]="preferences.tierPreferences[slot.key]"
+        (ngModelChange)="onTierChange(slot.key, $event)"
+      >
+        <option [ngValue]="null">Ask each time</option>
+        <option *ngFor="let option of tierOptionsFor(slot)" [ngValue]="option">
+          {{ option }}
+        </option>
+      </select>
+    </div>
+  </section>
+
+  <section class="settings-section">
+    <h3 class="section-title">Background</h3>
+    <p class="section-hint">The image is stored only in this browser.</p>
+
+    <div class="bg-preview-wrapper">
+      <img class="bg-preview" [src]="previewSrc" alt="Current background preview" />
+    </div>
+
+    <div class="bg-actions">
+      <input
+        type="file"
+        #bgInput
+        accept="image/*"
+        (change)="onFileSelected($event)"
+        style="display: none"
+      />
+      <button class="btn-primary" (click)="bgInput.click()">Upload Image</button>
+      <button class="btn-secondary" (click)="resetBackground()">Reset to default</button>
+    </div>
+
+    <p class="message error" *ngIf="errorMessage">{{ errorMessage }}</p>
+    <p class="message success" *ngIf="successMessage">{{ successMessage }}</p>
+  </section>
+</div>

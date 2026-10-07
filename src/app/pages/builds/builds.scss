@@ -1,0 +1,55 @@
+/* Builds library page layout; shared primitives live in global styles.scss. */
+
+.page-heading { width: 100%; max-width: 1200px; text-align: center; margin-bottom: 24px;
+  h2 { color: #d4af37; font-size: 2rem; margin: 0 0 8px; }
+  .hint { color: #a1a1aa; margin: 0; }
+}
+
+.library-toolbar { width: 100%; max-width: 1200px; margin-bottom: 24px; }
+
+.search-bar {
+  width: 100%; padding: 12px 16px; background: #09090a;
+  border: 1px solid #27272a; color: #e2e8f0; border-radius: 4px; font-size: 1rem;
+  box-sizing: border-box;
+  &:focus { outline: none; border-color: #71717a; }
+  &::placeholder { color: #52525b; }
+}
+
+.empty-state { margin-top: 5vh; }
+
+.card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; width: 100%; max-width: 1200px; }
+
+.build-card {
+  position: relative; background: rgba(0, 0, 0, 0.55); border: 1px solid #27272a; border-radius: 10px;
+  padding: 18px; display: flex; flex-direction: column; gap: 12px;
+
+  .card-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .card-name { color: #d4af37; font-weight: bold; font-size: 1.15rem; }
+  .saved-date { color: #71717a; font-size: 0.72rem; white-space: nowrap; }
+
+  .rename-input {
+    background: #09090b; border: 1px solid #d4af37; color: #e2e8f0;
+    padding: 4px 8px; border-radius: 4px; font-size: 1rem; width: 100%;
+    &:focus { outline: none; }
+  }
+
+  .tier-badge {
+    align-self: flex-start; background: #d4af37; color: #09090b; font-weight: bold;
+    font-size: 0.75rem; padding: 3px 10px; border-radius: 4px;
+  }
+
+  .gear-preview { display: flex; flex-wrap: wrap; gap: 6px; align-items: center;
+    .gear-icon { width: 44px; height: 44px; display: flex; justify-content: center; align-items: center;
+      img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 2px 3px rgba(0,0,0,0.6)); }
+    }
+    .no-gear { color: #52525b; font-size: 0.8rem; }
+  }
+
+  .tags-row { display: flex; flex-wrap: wrap; gap: 6px;
+    .tag { background: #27272a; color: #e2e8f0; border: 1px solid #3f3f46; font-size: 0.72rem; padding: 3px 8px; border-radius: 4px; }
+  }
+
+  .card-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: auto; }
+
+  .insert-hint { color: #71717a; font-size: 0.75rem; margin: 0; }
+}

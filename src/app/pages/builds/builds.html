@@ -1,0 +1,100 @@
+<div class="content-wrapper builds-page">
+  <div class="page-heading">
+    <h2>Build Library</h2>
+    <p class="hint">Saved builds are stored only in this browser.</p>
+  </div>
+
+  <div class="library-toolbar">
+    <input
+      class="search-bar"
+      type="text"
+      [(ngModel)]="searchQuery"
+      placeholder="Search saved builds..."
+    />
+  </div>
+
+  <div class="empty-state" *ngIf="library.savedBuilds.length === 0">
+    <h2>No saved builds</h2>
+    <p>Use the ⭐ button on a build card to save it here.</p>
+  </div>
+
+  <div class="empty-state" *ngIf="library.savedBuilds.length > 0 && filtered.length === 0">
+    <p>No saved builds match your search.</p>
+  </div>
+
+  <div class="card-grid">
+    <div class="build-card" *ngFor="let entry of filtered">
+      <div class="card-top">
+        <ng-container *ngIf="editingId !== entry.id; else editName">
+          <span class="card-name">{{ entry.name }}</span>
+        </ng-container>
+        <ng-template #editName>
+          <input
+            class="rename-input"
+            [(ngModel)]="editingName"
+            (keydown.enter)="commitRename()"
+            (blur)="commitRename()"
+            placeholder="Name..."
+          />
+        </ng-template>
+        <span class="saved-date">{{ formatDate(entry.savedAt) }}</span>
+      </div>
+
+      <div class="tier-badge" *ngIf="entry.build.minTier">{{ entry.build.minTier }}</div>
+
+      <div class="gear-preview">
+        <div class="gear-icon" *ngFor="let gear of gearIcons(entry.build)">
+          <img [src]="gearData.getImageUrl(gear.id)" [title]="gear.name" />
+        </div>
+        <span class="no-gear" *ngIf="gearIcons(entry.build).length === 0">No gear set</span>
+      </div>
+
+      <div class="tags-row" *ngIf="entry.build.tags?.length">
+        <span class="tag" *ngFor="let tag of entry.build.tags">{{ tag }}</span>
+      </div>
+
+      <div class="card-actions">
+        <button class="btn-secondary" (click)="startRename(entry)">Rename</button>
+        <button
+          class="btn-primary"
+          (click)="openTargetSelector(entry)"
+          [disabled]="workspace.collections.length === 0"
+        >
+          Insert into…
+        </button>
+        <button class="btn-danger" (click)="remove(entry.id)">Delete</button>
+      </div>
+
+      <p class="insert-hint" *ngIf="workspace.collections.length === 0">
+        Create a party or group in the Workspace first to insert builds.
+      </p>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" *ngIf="isTargetModalOpen" (click)="closeTargetModal()">
+  <div class="modal-content small-modal" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3>Select Target Destination</h3>
+      <button class="close-btn" (click)="closeTargetModal()">X</button>
+    </div>
+    <p style="margin-top: 0; color: #a1a1aa">
+      Where do you want to insert '{{ pendingSaved?.name }}'?
+    </p>
+    <div class="target-list">
+      <button
+        class="target-btn"
+        *ngFor="let col of workspace.collections"
+        (click)="confirmTarget(col.id)"
+        [disabled]="col.builds.length >= (col.type === 'party' ? 20 : 12)"
+      >
+        {{ col.name }}
+        <span class="target-type"
+          >({{ col.type | titlecase }}) - {{ col.builds.length }}/{{
+            col.type === 'party' ? 20 : 12
+          }}</span
+        >
+      </button>
+    </div>
+  </div>
+</div>

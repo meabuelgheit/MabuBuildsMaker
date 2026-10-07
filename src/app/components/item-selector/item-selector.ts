@@ -6,11 +6,20 @@ import {
   OnInit,
   OnDestroy,
   ElementRef,
+  inject,
+  PLATFORM_ID,
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { GearItem, SlotCategory, GroupedItem } from '../../shared/models/item';
+import {
+  GearItem,
+  SlotCategory,
+  GroupedItem,
+  TierPreferences,
+  categoryToTierSlot,
+} from '../../shared/models/item';
 import { GearData } from '../../services/gear-data';
+import { PreferencesService } from '../../services/preferences';
 
 @Component({
   selector: 'app-item-selector',
@@ -23,6 +32,7 @@ export class ItemSelector implements OnInit, OnDestroy {
   @Input() isOpen = false;
   @Input() category: SlotCategory | null = null;
   @Input() isSwapMode = false;
+  @Input() tierPreferences: TierPreferences | null = null;
 
   @Output() itemSelected = new EventEmitter<GearItem>();
   @Output() close = new EventEmitter<void>();
@@ -34,12 +44,17 @@ export class ItemSelector implements OnInit, OnDestroy {
   step: 'base' | 'tier' = 'base';
   selectedGroup: GroupedItem | null = null;
 
+  private platformId = inject(PLATFORM_ID);
+  private preferences = inject(PreferencesService);
+
   constructor(
     public gearData: GearData,
     private el: ElementRef,
   ) {}
 
   ngOnInit() {
+    if (!isPlatformBrowser(this.platformId)) return;
+
     document.body.appendChild(this.el.nativeElement);
 
     this.gearData.getAvailableItems().subscribe((items) => {
@@ -121,6 +136,15 @@ export class ItemSelector implements OnInit, OnDestroy {
   }
 
   selectGroup(group: GroupedItem) {
+    const slot = categoryToTierSlot(group.category);
+    const preference = this.tierPreferences?.[slot] ?? null;
+    const preferred = this.preferences.resolveVariation(group, preference);
+
+    if (preferred) {
+      this.selectVariation(preferred);
+      return;
+    }
+
     if (group.variations.length === 1) {
       this.selectVariation(group.variations[0]);
     } else {

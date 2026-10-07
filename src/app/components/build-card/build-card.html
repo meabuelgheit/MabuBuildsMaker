@@ -4,6 +4,7 @@
       *ngIf="!hideUI"
       class="build-title-input"
       [(ngModel)]="build.title"
+      (ngModelChange)="touch()"
       placeholder="Build Name..."
     />
 
@@ -179,6 +180,23 @@
     <div class="gear-slot main" (click)="openSelector('potion')" [class.empty]="!build.potion">
       <img *ngIf="build.potion" [src]="gearData.getImageUrl(build.potion.id)" />
       <span class="empty-text" *ngIf="!hideUI && !build.potion">+ Pot</span>
+      <div class="swaps-overlay" *ngIf="build.potion && build.swaps.potion.length > 0">
+        <div
+          class="gear-slot small"
+          *ngFor="let swap of build.swaps.potion; let i = index"
+          (click)="$event.stopPropagation(); removeSwap('potion', i)"
+        >
+          <img [src]="gearData.getImageUrl(swap.id)" />
+          <div class="remove-overlay" *ngIf="!hideUI">×</div>
+        </div>
+      </div>
+      <div
+        class="add-swap-btn"
+        *ngIf="build.potion && !hideUI"
+        (click)="$event.stopPropagation(); openSelector('potion', true)"
+      >
+        +
+      </div>
     </div>
   </div>
 
@@ -194,6 +212,13 @@
     <button class="icon-btn copy-btn" (click)="duplicateRequest.emit()" title="Duplicate">
       📋
     </button>
+    <button
+      class="icon-btn save-btn"
+      (click)="saveToLibrary()"
+      [title]="savedConfirmation ? 'Saved!' : 'Save to library'"
+    >
+      {{ savedConfirmation ? '✓' : '⭐' }}
+    </button>
     <button class="icon-btn delete-btn" (click)="deleteRequest.emit()" title="Delete">×</button>
   </div>
 </div>
@@ -202,6 +227,7 @@
   [isOpen]="isSelectorOpen"
   [category]="activeSelectorCategory"
   [isSwapMode]="isSwapMode"
+  [tierPreferences]="preferences.tierPreferences"
   (itemSelected)="handleItemSelected($event)"
   (close)="isSelectorOpen = false"
 ></app-item-selector>
