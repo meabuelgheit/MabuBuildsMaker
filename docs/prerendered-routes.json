@@ -1,5 +1,8 @@
 {
   "routes": {
-    "/MabuBuildsMaker": {}
+    "/MabuBuildsMaker": {},
+    "/MabuBuildsMaker/builds": {},
+    "/MabuBuildsMaker/groups": {},
+    "/MabuBuildsMaker/settings": {}
   }
 }
