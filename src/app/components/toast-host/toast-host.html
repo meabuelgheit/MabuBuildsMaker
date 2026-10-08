@@ -1,0 +1,7 @@
+<div class="toast-host" aria-live="polite">
+  @for (t of toasts(); track t.id) {
+    <div class="toast" [class.success]="t.kind === 'success'" [class.error]="t.kind === 'error'" [class.info]="t.kind === 'info'">
+      {{ t.message }}
+    </div>
+  }
+</div>

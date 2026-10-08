@@ -1,0 +1,37 @@
+@if (open) {
+  <div class="modal-backdrop" (click)="close()">
+    <div #panel class="modal-content share-modal" tabindex="-1" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>{{ title }}</h3>
+        <button class="close-btn" (click)="close()" aria-label="Close share dialog">X</button>
+      </div>
+
+      @if (state === 'rendering') {
+        <div class="share-status" aria-live="polite">Rendering image…</div>
+      } @else if (state === 'error') {
+        <div class="share-status error" aria-live="polite">{{ errorMessage }}</div>
+        <div class="share-actions">
+          <button class="btn-primary" (click)="startRender()" aria-label="Retry rendering">↻ Retry</button>
+        </div>
+      } @else if (state === 'done' && safeUrl) {
+        <img class="share-preview" [src]="safeUrl" alt="Share image preview" />
+        <div class="share-actions">
+          <button class="btn-primary" (click)="download()" aria-label="Download JPG">⬇ Download JPG</button>
+          @if (canCopy) {
+            <button class="btn-secondary" (click)="copy()" aria-label="Copy image to clipboard">📋 Copy image</button>
+          } @else {
+            <button
+              class="btn-secondary"
+              disabled
+              title="Image clipboard write is not available in this browser"
+              aria-label="Copy image unavailable in this browser"
+            >
+              📋 Copy image (unavailable)
+            </button>
+          }
+          <button class="btn-secondary" (click)="close()" aria-label="Close share dialog">✕ Close</button>
+        </div>
+      }
+    </div>
+  </div>
+}

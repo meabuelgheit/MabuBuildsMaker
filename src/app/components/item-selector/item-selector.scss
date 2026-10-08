@@ -1,5 +1,3 @@
-@use "sass:color";
-
 $modal-bg: #121214; 
 $border-color: #27272a;
 $text-main: #e2e8f0;
@@ -18,7 +16,6 @@ $slot-bg: #09090b;
   width: 90%; max-width: 800px;
   max-height: 80vh; 
   display: flex; flex-direction: column; padding: 24px; color: $text-main;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
 }
 
 .modal-header {
@@ -46,11 +43,10 @@ $slot-bg: #09090b;
 }
 
 .item-list, .tier-container {
-  overflow-y: auto; padding-right: 8px; 
-  &::-webkit-scrollbar { width: 8px; }
-  &::-webkit-scrollbar-track { background: #09090a; border-radius: 4px; }
-  &::-webkit-scrollbar-thumb { background: $border-color; border-radius: 4px; &:hover { background: color.adjust($border-color, $lightness: 10%); } }
+  overflow-y: auto; padding-right: 8px;
 }
+
+.loading-items { color: $text-muted; text-align: center; padding: 32px 16px; font-size: 0.95rem; }
 
 .item-list {
   display: grid;

@@ -1,14 +1,45 @@
+@use "sass:color";
+
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('./fonts/Inter-Regular.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('./fonts/Inter-SemiBold.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('./fonts/Inter-Bold.woff2') format('woff2');
+}
+
+:root {
+  --app-bg-image: url('../public/Background.jpg');
+}
+
 body {
   margin: 0;
   padding: 0;
   min-height: 100vh;
   width: 100%;
-  
+  font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+
   background-image: linear-gradient(
       rgba(0, 0, 0, 0.75), 
       rgba(0, 0, 0, 0.75)
     ), 
-    url('../public/Background.jpg'); 
+    var(--app-bg-image); 
   
   background-size: cover;
   background-position: center;
@@ -16,4 +47,171 @@ body {
   background-repeat: no-repeat;
   
   background-color: #09090b; 
+}
+
+/* `fixed` is the known mobile scroll-jank cause; fall back on touch devices. */
+@media (hover: none) {
+  body { background-attachment: scroll; }
+}
+
+/* Flat scrollbars (Chromium + Firefox), no shadows. */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: #09090b; border-radius: 5px; }
+::-webkit-scrollbar-thumb { background: #27272a; border-radius: 5px; }
+::-webkit-scrollbar-thumb:hover { background: #3f3f46; }
+* { scrollbar-width: thin; scrollbar-color: #27272a #09090b; }
+
+/* Flat select primitive with an inline-SVG chevron. */
+.select {
+  appearance: none; -webkit-appearance: none;
+  background-color: #09090b; color: #e2e8f0;
+  border: 1px solid #3f3f46; border-radius: 6px;
+  padding: 8px 36px 8px 12px; font-family: inherit; font-size: 0.95rem; cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8' fill='none'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%23d4af37' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 12px 8px;
+  &:focus { outline: none; border-color: #d4af37; }
+  &:focus-visible { outline: 2px solid #fde047; outline-offset: 2px; }
+}
+
+/* Flat text input primitive. */
+.input {
+  background: #09090b; color: #e2e8f0;
+  border: 1px solid #3f3f46; border-radius: 6px;
+  padding: 8px 12px; font-family: inherit; font-size: 1rem; box-sizing: border-box;
+  &:focus { outline: none; border-color: #d4af37; }
+  &:focus-visible { outline: 2px solid #fde047; outline-offset: 2px; }
+}
+
+/* Shared page primitives (previously scoped to the App shell). */
+
+.content-wrapper {
+  flex: 1; display: flex; flex-direction: column; 
+  align-items: center; justify-content: flex-start; 
+  width: 100%; padding: 110px 24px 40px; box-sizing: border-box; max-width: 100%; overflow-x: hidden;
+  
+  &.zen-mode { padding-top: 40px; justify-content: center; }
+}
+
+.collection-container {
+  position: relative; z-index: 1; 
+  width: fit-content; min-width: min(1000px, 100%); max-width: 100%; 
+  margin-bottom: 60px; padding: 32px; box-sizing: border-box;
+  border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px;
+  display: flex; flex-direction: column; align-items: center; 
+  
+  &::before {
+    content: ''; position: absolute; inset: 0;
+    background: rgba(0, 0, 0, 0.55); backdrop-filter: blur(12px);
+    border-radius: inherit; z-index: -1; pointer-events: none;
+  }
+
+  &.zen-mode { 
+    background-color: #09090ba2;
+    border-color: transparent; padding: 20px; 
+    &::before { display: none; } 
+  }
+}
+
+.build-list {
+  display: grid;
+  width: fit-content;
+  max-width: 100%;
+  gap: 6px 28px;
+  justify-content: center;
+  grid-auto-flow: column;
+  grid-auto-columns: max-content;
+  grid-template-rows: repeat(var(--builds-per-column, 10), min-content);
+
+  @media (max-width: 1900px) {
+    grid-auto-flow: row;
+    grid-template-rows: none;
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+}
+
+.collection-header {
+  display: flex; align-items: center; gap: 16px; margin-bottom: 32px; padding-bottom: 16px; border-bottom: 1px solid #27272a; width: 100%;
+  &.view-only { border-bottom: none; padding-bottom: 0; margin-bottom: 32px; justify-content: center; }
+  
+  .view-only-title { color: #d4af37; font-size: 2.2rem; margin: 0; letter-spacing: 1.5px; text-transform: uppercase; }
+
+  .collection-name-input {
+    background: transparent; border: 1px solid transparent; color: #d4af37;
+    font-size: 1.6rem; font-weight: bold; padding: 6px 12px; border-radius: 4px; width: 350px;
+    &:focus { outline: none; background: #09090b; border-color: #3f3f46; color: #fde047; }
+  }
+  
+  .btn-danger { margin-left: auto; }
+}
+
+button {
+  font-family: inherit; cursor: pointer; border-radius: 6px; font-weight: 600; border: none; transition: 0.2s;
+  &:focus-visible { outline: 2px solid #fde047; outline-offset: 2px; }
+  &.btn-secondary { background: #27272a; color: #e2e8f0; padding: 10px 16px; &:hover { background: #3f3f46; } }
+  &.btn-primary { 
+    background: #d4af37; color: #09090a; padding: 10px 16px; 
+    &:disabled { background: #3f3f46; color: #71717a; cursor: not-allowed; } 
+    &:hover:not(:disabled) { background: color.adjust(#d4af37, $lightness: 10%); } 
+  }
+  &.btn-danger { background: transparent; border: 1px solid #9f1239; color: #f43f5e; padding: 10px 16px; &:hover { background: #9f1239; color: white; } }
+}
+
+.empty-state { width: 100%; text-align: center; color: #71717a; margin-top: 15vh; h2 { color: #a1a1aa; font-size: 2rem; } }
+
+.modal-backdrop {
+  position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+  background: rgba(0, 0, 0, 0.85); display: flex; justify-content: center; align-items: center;
+  z-index: 1000; backdrop-filter: blur(4px);
+}
+
+.modal-content {
+  background: #121214; border: 1px solid #27272a; border-radius: 8px;
+  width: 90%; max-width: 600px; max-height: 80vh; 
+  display: flex; flex-direction: column; padding: 24px; color: #e2e8f0;
+
+  &.small-modal { max-width: 450px; }
+}
+
+.modal-header {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 20px; border-bottom: 1px solid #27272a; padding-bottom: 12px;
+  h3 { margin: 0; font-size: 1.5rem; color: #d4af37; }
+  .close-btn { background: transparent; border: none; color: #8b92a5; font-size: 1.5rem; cursor: pointer; &:hover { color: #ff4757; } }
+}
+
+.trash-list {
+  display: flex; flex-direction: column; gap: 10px; overflow-y: auto;
+  .trash-item {
+    display: flex; justify-content: space-between; align-items: center;
+    background: #09090b; border: 1px solid #27272a; padding: 12px; border-radius: 6px;
+    .trash-name { font-weight: bold; color: #e2e8f0; }
+    .trash-actions { display: flex; gap: 8px; flex-shrink: 0; }
+  }
+}
+
+.target-list {
+  display: flex; flex-direction: column; gap: 10px; overflow-y: auto;
+  .target-btn {
+    text-align: left; background: #09090b; border: 1px solid #27272a; color: #e2e8f0;
+    padding: 14px; border-radius: 6px; font-size: 1rem; cursor: pointer; transition: 0.1s;
+    display: flex; justify-content: space-between; align-items: center;
+    &:hover:not(:disabled) { border-color: #d4af37; background: #27272a; }
+    &:disabled { opacity: 0.5; cursor: not-allowed; }
+    .target-type { color: #a1a1aa; font-size: 0.85rem; }
+  }
+}
+
+@media (max-width: 900px) {
+  .content-wrapper { padding: 96px 12px 24px; }
+
+  .collection-container { padding: 16px; margin-bottom: 32px; }
+
+  .collection-header {
+    flex-wrap: wrap;
+
+    .collection-name-input { width: 100%; }
+  }
 }

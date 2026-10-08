@@ -1,0 +1,158 @@
+<div class="content-wrapper" [class.zen-mode]="uiState.hideUI">
+  @if (!uiState.hideUI) {
+    <div class="workspace-actions">
+      <input
+        type="file"
+        #fileInput
+        id="importFile"
+        name="importFile"
+        aria-label="Import backup JSON"
+        (change)="importData($event)"
+        accept=".json"
+        style="display: none"
+      />
+      <button class="btn-secondary" (click)="fileInput.click()">↓ Import</button>
+      <button class="btn-secondary" (click)="exportData()">↑ Export</button>
+
+      @if (workspace.trashedBuilds.length > 0) {
+        <button class="btn-danger" (click)="isTrashModalOpen = true">
+          🗑️ Trash ({{ workspace.trashedBuilds.length }})
+        </button>
+      }
+
+      <button class="btn-primary" (click)="addCollection('party')">+ Make Party Builds</button>
+      <button class="btn-primary" (click)="addCollection('group')">+ Make Group Builds</button>
+    </div>
+  }
+
+  @if (workspace.collections.length === 0 && !uiState.hideUI) {
+    <div class="empty-state">
+      <h2>Welcome to Mabu Builds</h2>
+      <p>Select an option above to start creating groups.</p>
+    </div>
+  }
+
+  @for (collection of workspace.collections; track collection.id; let ci = $index) {
+    @if (!uiState.hideUI || collection.isVisibleInViewMode) {
+      <div class="collection-container" [class.zen-mode]="uiState.hideUI">
+        @if (!uiState.hideUI) {
+          <div class="collection-header">
+            <input
+              class="collection-name-input"
+              [id]="'collection-name-' + collection.id"
+              name="collectionName"
+              aria-label="Collection name"
+              [(ngModel)]="collection.name"
+              (ngModelChange)="workspace.touch()"
+              placeholder="Custom Name..."
+            />
+
+            <button
+              class="btn-secondary toggle-vis-btn"
+              (click)="toggleVisibility(collection.id)"
+              [class.hidden-state]="!collection.isVisibleInViewMode"
+            >
+              {{ collection.isVisibleInViewMode ? '👁 Visible' : '🚫 Hidden' }}
+            </button>
+
+            <button
+              class="btn-primary add-build-btn"
+              (click)="addBuild(collection.id)"
+              [disabled]="collection.builds.length >= (collection.type === 'party' ? 20 : 12)"
+              style="margin-left: 16px"
+            >
+              + Add Build ({{ collection.builds.length }}/{{ collection.type === 'party' ? 20 : 12 }})
+            </button>
+            <button class="btn-secondary share-collection-btn" (click)="openShareCollection(collection)" aria-label="Share collection as image">
+              ⇪ Share
+            </button>
+            <button class="btn-danger" (click)="removeCollection(collection.id)">
+              Delete {{ collection.type === 'party' ? 'Party' : 'Group' }}
+            </button>
+          </div>
+        }
+
+        @if (uiState.hideUI && collection.name) {
+          <div class="collection-header view-only">
+            <h2 class="view-only-title">{{ collection.name }}</h2>
+          </div>
+        }
+
+        <div class="build-list" [style.--builds-per-column]="buildsPerColumnFor(collection)">
+          @for (build of collection.builds; track build.id; let i = $index) {
+            <app-build-card
+              [build]="build"
+              [hideUI]="uiState.hideUI"
+              [isFirst]="i === 0"
+              [isLast]="i === collection.builds.length - 1"
+              [eager]="ci === 0 && i === 0"
+              (deleteRequest)="deleteBuild(collection.id, build.id)"
+              (duplicateRequest)="openTargetSelector(build, 'duplicate')"
+              (moveUp)="moveBuild(collection.id, build.id, -1)"
+              (moveDown)="moveBuild(collection.id, build.id, 1)"
+              (shareRequest)="openShareBuild(build, collection.name)"
+            >
+            </app-build-card>
+          }
+        </div>
+      </div>
+    }
+  }
+</div>
+
+@if (isTrashModalOpen) {
+  <div class="modal-backdrop" (click)="isTrashModalOpen = false">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>🗑️ Trashed Builds</h3>
+        <button class="close-btn" (click)="isTrashModalOpen = false" aria-label="Close trash dialog">X</button>
+      </div>
+      <div class="trash-list">
+        @for (tb of workspace.trashedBuilds; track tb.id) {
+          <div class="trash-item">
+            <span class="trash-name">{{ tb.title }}</span>
+            <div class="trash-actions">
+              <button class="btn-primary" (click)="openTargetSelector(tb, 'restore')">Restore</button>
+              <button class="btn-danger" (click)="deleteTrashedForever(tb.id)">Delete forever</button>
+            </div>
+          </div>
+        }
+        @if (workspace.trashedBuilds.length === 0) {
+          <div style="color: #71717a; text-align: center; padding: 20px">Trash is empty.</div>
+        }
+      </div>
+    </div>
+  </div>
+}
+
+@if (isTargetModalOpen) {
+  <div class="modal-backdrop" (click)="closeTargetModal()">
+    <div class="modal-content small-modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Select Target Destination</h3>
+        <button class="close-btn" (click)="closeTargetModal()" aria-label="Close target picker">X</button>
+      </div>
+      <p style="margin-top: 0; color: #a1a1aa">
+        Where do you want to send '{{ pendingBuild?.title }}'?
+      </p>
+      <div class="target-list">
+        @for (col of workspace.collections; track col.id) {
+          <button
+            class="target-btn"
+            (click)="confirmTarget(col.id)"
+            [disabled]="col.builds.length >= (col.type === 'party' ? 20 : 12)"
+          >
+            {{ col.name }}
+            <span class="target-type"
+              >({{ col.type | titlecase }}) - {{ col.builds.length }}/{{
+                col.type === 'party' ? 20 : 12
+              }}</span
+            >
+          </button>
+        }
+      </div>
+    </div>
+  </div>
+}
+
+<app-share-modal [open]="isShareOpen" [request]="shareRequest" (closed)="closeShare()"></app-share-modal>

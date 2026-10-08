@@ -1,0 +1,6 @@
+/* Workspace-specific layout; shared primitives live in global styles.scss. */
+
+.workspace-actions {
+  display: flex; flex-wrap: wrap; justify-content: center; align-items: center;
+  gap: 12px; width: 100%; max-width: 1200px; margin-bottom: 40px;
+}

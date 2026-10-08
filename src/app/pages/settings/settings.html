@@ -1,0 +1,100 @@
+<div class="content-wrapper settings-page">
+  <div class="page-heading">
+    <h2>Settings</h2>
+    <p class="hint">Preferences are stored only in this browser.</p>
+  </div>
+
+  <section class="settings-section">
+    <h3 class="section-title">Tier Preferences</h3>
+    <p class="section-hint">
+      Choose an exact tier for each slot. "Ask each time" keeps the current selection flow.
+    </p>
+
+    @for (slot of slots; track slot.key) {
+      <div class="pref-row">
+        <label class="pref-label" [for]="'tier-pref-' + slot.key">{{ slot.label }}</label>
+        <select
+          class="pref-select select"
+          [id]="'tier-pref-' + slot.key"
+          [name]="'tier-pref-' + slot.key"
+          [ngModel]="preferences.tierPreferences[slot.key]"
+          (ngModelChange)="onTierChange(slot.key, $event)"
+        >
+          <option [ngValue]="null">Ask each time</option>
+          @for (option of tierOptionsFor(slot); track option) {
+            <option [ngValue]="option">{{ option }}</option>
+          }
+        </select>
+      </div>
+    }
+  </section>
+
+  <section class="settings-section">
+    <h3 class="section-title">Layout</h3>
+    <p class="section-hint">
+      How many builds appear per column. Auto uses party 10 / group 6; columns fill automatically as you add builds.
+    </p>
+
+    <div class="pref-row">
+      <label class="pref-label" for="buildsPerColumn">Builds per column</label>
+      <select
+        id="buildsPerColumn"
+        name="buildsPerColumn"
+        class="pref-select select"
+        [ngModel]="preferences.buildsPerColumn"
+        (ngModelChange)="preferences.setBuildsPerColumn($event)"
+      >
+        <option [ngValue]="null">Auto (party 10 / group 6)</option>
+        @for (n of columnOptions; track n) {
+          <option [ngValue]="n">{{ n }}</option>
+        }
+      </select>
+    </div>
+
+    <div class="pref-row">
+      <label class="pref-label" for="showTierLabels">Show item tier labels (e.g. 8.3)</label>
+      <input
+        type="checkbox"
+        id="showTierLabels"
+        name="showTierLabels"
+        class="pref-checkbox"
+        [ngModel]="preferences.showTierLabels"
+        (ngModelChange)="preferences.setShowTierLabels($event)"
+      />
+    </div>
+    <p class="section-hint">
+      The hover tooltip still shows the full item name when tier labels are hidden.
+    </p>
+  </section>
+
+  <section class="settings-section">
+    <h3 class="section-title">Background</h3>
+    <p class="section-hint">The image is stored only in this browser.</p>
+
+    <div class="bg-preview-wrapper">
+      <img class="bg-preview" [src]="previewSrc" alt="Current background preview" />
+    </div>
+
+    <div class="bg-actions">
+      <input
+        type="file"
+        #bgInput
+        id="backgroundFile"
+        name="backgroundFile"
+        aria-label="Background image"
+        accept="image/*"
+        (change)="onFileSelected($event)"
+        style="display: none"
+      />
+      <button class="btn-primary" (click)="bgInput.click()">Upload Image</button>
+      <button class="btn-secondary" (click)="resetBackground()">Reset to default</button>
+    </div>
+
+    @if (errorMessage) {
+      <p class="message error">{{ errorMessage }}</p>
+    }
+    @if (successMessage) {
+      <p class="message success">{{ successMessage }}</p>
+    }
+  </section>
+</div>
