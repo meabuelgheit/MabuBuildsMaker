@@ -19,7 +19,8 @@ import { ToastService } from '../../services/toast';
 /** Describes what the share modal should render. */
 export type ShareRequest =
   | { kind: 'build'; build: PlayerBuild; subtitle?: string }
-  | { kind: 'collection'; collection: BuildCollection };
+  | { kind: 'collection'; collection: BuildCollection }
+  | { kind: 'collections'; collections: BuildCollection[] };
 
 /** Modal that renders a share image, previews it, and offers download/copy. */
 @Component({
@@ -71,6 +72,7 @@ export class ShareModal implements OnChanges {
     const req = this.request;
     if (!req) return 'Share';
     if (req.kind === 'build') return 'Share build';
+    if (req.kind === 'collections') return 'Share all';
     return req.collection.type === 'group' ? 'Share group' : 'Share party';
   }
 
@@ -113,7 +115,9 @@ export class ShareModal implements OnChanges {
       const res =
         req.kind === 'build'
           ? await this.shareImage.renderBuild(req.build, { subtitle: req.subtitle })
-          : await this.shareImage.renderCollection(req.collection);
+          : req.kind === 'collections'
+            ? await this.shareImage.renderCollections(req.collections)
+            : await this.shareImage.renderCollection(req.collection);
       if (token !== this.renderToken) return; // stale render
       this.setImage(res.blob);
       this.result = res;
@@ -195,9 +199,11 @@ export class ShareModal implements OnChanges {
     const base =
       req?.kind === 'build'
         ? req.build.title
-        : req?.kind === 'collection'
-          ? req.collection.name
-          : 'share';
+        : req?.kind === 'collections'
+          ? 'all-groups'
+          : req?.kind === 'collection'
+            ? req.collection.name
+            : 'share';
     const slug =
       (base || 'share')
         .toLowerCase()

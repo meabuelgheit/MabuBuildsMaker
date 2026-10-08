@@ -13,6 +13,7 @@
       />
       <button class="btn-secondary" (click)="fileInput.click()">↓ Import</button>
       <button class="btn-secondary" (click)="exportData()">↑ Export</button>
+      <button class="btn-secondary" (click)="openShareAll()">⇪ Share all</button>
 
       @if (workspace.trashedBuilds.length > 0) {
         <button class="btn-danger" (click)="isTrashModalOpen = true">
