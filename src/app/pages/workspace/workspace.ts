@@ -84,6 +84,19 @@ export class WorkspacePage implements OnInit, OnDestroy {
     this.isShareOpen = true;
   }
 
+  /** Opens one stacked share image for every visible collection that has builds. */
+  openShareAll() {
+    const collections = this.workspace.collections.filter(
+      (c) => c.isVisibleInViewMode && c.builds.length > 0,
+    );
+    if (!collections.length) {
+      this.toast.show('No visible collections with builds to share.', 'info');
+      return;
+    }
+    this.shareRequest = { kind: 'collections', collections };
+    this.isShareOpen = true;
+  }
+
   closeShare() {
     this.isShareOpen = false;
   }

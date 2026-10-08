@@ -51,6 +51,8 @@ const COL_GAP = 32;
 const COL_WIDTH_CAP = 2600;
 const COL_HEADER_H = 150;
 const COL_FOOTER_H = 70;
+/** Vertical gap between stacked collection blocks (matches zen-mode spacing). */
+const COL_BLOCK_GAP = 32;
 /** How far an alt tile hangs past the main corner, as a fraction of tile size. */
 const SWAP_OUTSET_RATIO = 0.12;
 /** Horizontal stagger between a pair of alt tiles. */
@@ -167,7 +169,85 @@ export class ShareImageService {
     this.beginRender();
     await this.loadFonts();
     const background = await this.loadBackground();
+    const layout = this.computeCollectionLayout(collection);
+    const { width, height } = layout;
 
+    const items: GearItem[] = [];
+    for (const b of collection.builds) items.push(...this.collectItems(b));
+    const keys = await this.preload(items, COLLECTION_ICON_PX);
+
+    try {
+      const canvas = this.createCanvas(width, height);
+      const ctx = canvas.getContext('2d')!;
+      this.drawBackground(ctx, width, height, background);
+      this.drawCollectionCard(ctx, collection, layout, this.preferences.showTierLabels);
+      const blob = await this.toBlob(canvas);
+      return { blob, width, height, missingIcons: this.missingIcons };
+    } finally {
+      this.unpin(keys);
+    }
+  }
+
+  /**
+   * Renders every given collection as one stacked image: each block keeps its own
+   * zen layout and is centred on the widest block, with a single footer at the end.
+   */
+  async renderCollections(collections: BuildCollection[]): Promise<ShareResult> {
+    this.beginRender();
+    await this.loadFonts();
+    const background = await this.loadBackground();
+
+    if (!collections.length) {
+      throw new Error('renderCollections requires at least one collection');
+    }
+    const blocks = collections.map((collection) => ({
+      collection,
+      layout: this.computeCollectionLayout(collection),
+    }));
+
+    // Width is the widest block; height stacks the content with a gap between blocks.
+    const width = Math.max(...blocks.map((b) => b.layout.width));
+    const height =
+      blocks.reduce((sum, b) => sum + (b.layout.height - COL_FOOTER_H), 0) +
+      COL_BLOCK_GAP * (blocks.length - 1) +
+      COL_FOOTER_H;
+
+    const items: GearItem[] = [];
+    for (const { collection } of blocks) {
+      for (const build of collection.builds) items.push(...this.collectItems(build));
+    }
+    const keys = await this.preload(items, COLLECTION_ICON_PX);
+
+    try {
+      const canvas = this.createCanvas(width, height);
+      const ctx = canvas.getContext('2d')!;
+      this.drawBackground(ctx, width, height, background);
+      let y = 0;
+      for (const block of blocks) {
+        const originX = Math.round((width - block.layout.width) / 2);
+        this.drawCollectionBlock(
+          ctx,
+          block.collection,
+          block.layout,
+          this.preferences.showTierLabels,
+          originX,
+          y,
+        );
+        y += block.layout.height - COL_FOOTER_H + COL_BLOCK_GAP;
+      }
+      this.drawFooter(ctx, width, height);
+      const blob = await this.toBlob(canvas);
+      return { blob, width, height, missingIcons: this.missingIcons };
+    } finally {
+      this.unpin(keys);
+    }
+  }
+
+  /**
+   * Pure layout computation for one collection: columns, sizing, strips and rows.
+   * No await and no canvas, so the single and stacked renderers share it exactly.
+   */
+  private computeCollectionLayout(collection: BuildCollection): CollectionLayout {
     const builds = collection.builds;
     const perColumnPref =
       this.preferences.buildsPerColumn ?? (collection.type === 'party' ? 10 : 6);
@@ -268,7 +348,7 @@ export class ShareImageService {
 
     const rowH = iconSize + 44;
     const height = COL_HEADER_H + rowsUsed * rowH + COL_FOOTER_H;
-    const layout: CollectionLayout = {
+    return {
       width,
       height,
       columns,
@@ -285,21 +365,6 @@ export class ShareImageService {
       headerH: COL_HEADER_H,
       rowH,
     };
-
-    const items: GearItem[] = [];
-    for (const b of builds) items.push(...this.collectItems(b));
-    const keys = await this.preload(items, COLLECTION_ICON_PX);
-
-    try {
-      const canvas = this.createCanvas(width, height);
-      const ctx = canvas.getContext('2d')!;
-      this.drawBackground(ctx, width, height, background);
-      this.drawCollectionCard(ctx, collection, layout, this.preferences.showTierLabels);
-      const blob = await this.toBlob(canvas);
-      return { blob, width, height, missingIcons: this.missingIcons };
-    } finally {
-      this.unpin(keys);
-    }
   }
 
   /**
@@ -652,25 +717,47 @@ export class ShareImageService {
     layout: CollectionLayout,
     showTierLabels: boolean,
   ): void {
-    const { width, height, columns, perColumn, iconSize, swapSize, outset, stripWidths, contentWs, iconGap, colW, colGap, headerH, rowH } =
+    this.drawCollectionBlock(ctx, collection, layout, showTierLabels, 0, 0);
+    this.drawFooter(ctx, layout.width, layout.height);
+  }
+
+  /**
+   * Draws one collection's header and rows at the given origin (no footer), so the
+   * single card (origin 0,0) and the stacked "share all" image can share the code.
+   */
+  private drawCollectionBlock(
+    ctx: CanvasRenderingContext2D,
+    collection: BuildCollection,
+    layout: CollectionLayout,
+    showTierLabels: boolean,
+    originX: number,
+    originY: number,
+  ): void {
+    const { width, columns, perColumn, iconSize, swapSize, outset, stripWidths, contentWs, iconGap, colW, colGap, headerH, rowH } =
       layout;
 
     // Header: centred gold, uppercase, letter-spaced collection name only.
     ctx.textBaseline = 'alphabetic';
     ctx.font = '700 48px Inter, sans-serif';
     ctx.fillStyle = GOLD;
-    this.fillTextSpaced(ctx, (collection.name || 'Untitled').toUpperCase(), width / 2, 92, 3);
+    this.fillTextSpaced(
+      ctx,
+      (collection.name || 'Untitled').toUpperCase(),
+      originX + width / 2,
+      originY + 92,
+      3,
+    );
     ctx.textAlign = 'left';
 
-    // Centre the whole column block horizontally inside the canvas.
+    // Centre the whole column block horizontally inside this block's own width.
     const blockW = columns * colW + (columns - 1) * colGap;
     const startX = Math.round((width - blockW) / 2);
 
     collection.builds.forEach((build, idx) => {
       const col = Math.floor(idx / perColumn);
       const row = idx % perColumn;
-      const colX = startX + col * (colW + colGap);
-      const rowY = headerH + row * rowH;
+      const colX = originX + startX + col * (colW + colGap);
+      const rowY = originY + headerH + row * rowH;
 
       // Row panel (zen tint).
       this.roundRect(ctx, colX, rowY + 4, colW, rowH - 10, 10);
@@ -722,8 +809,6 @@ export class ShareImageService {
         });
       }
     });
-
-    this.drawFooter(ctx, width, height);
   }
 
   /** Draws one tile: bitmap, placeholder, and a tier label (below chip or corner badge). */
