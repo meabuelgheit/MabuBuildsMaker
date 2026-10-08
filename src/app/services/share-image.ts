@@ -119,6 +119,8 @@ export class ShareImageService {
   private cache = new Map<string, ImageBitmap | null>();
   /** Keys an in-flight render still needs; never evicted/closed until it ends. */
   private pinned = new Set<string>();
+  /** Cached 1x1 scratch context for text measurement (created on first use). */
+  private scratch: CanvasRenderingContext2D | null = null;
   private fontsReady = false;
   private missingIcons = 0;
 
@@ -167,13 +169,39 @@ export class ShareImageService {
     const background = await this.loadBackground();
 
     const builds = collection.builds;
-    const perColumn =
+    const perColumnPref =
       this.preferences.buildsPerColumn ?? (collection.type === 'party' ? 10 : 6);
-    const columns = builds.length ? Math.ceil(builds.length / perColumn) : 1;
+    let perColumn = perColumnPref;
+    let columns = builds.length ? Math.ceil(builds.length / perColumn) : 1;
+
+    const iconGap = COL_ICON_GAP;
+    // Pre-pass: raise builds-per-column until a 32 px-minimum card fits the width cap.
+    // Fewer, taller columns beat an unbounded row; the preference is honoured when it fits.
+    const minOutset = Math.round(32 * SWAP_OUTSET_RATIO);
+    const minWidth = (per: number, cols: number): number => {
+      const columnBuilds = (c: number) => builds.slice(c * per, c * per + per);
+      const strips = Array.from({ length: cols }, (_, c) =>
+        this.measureColumnStrip(columnBuilds(c)),
+      );
+      const overs = strips.map((_, c) => this.columnAltOverhang(columnBuilds(c), minOutset));
+      const minColW = Math.max(
+        ...strips.map(
+          (strip, c) =>
+            strip +
+            this.slots.length * 32 +
+            (this.slots.length - 1) * iconGap +
+            2 * overs[c],
+        ),
+      );
+      return 2 * COL_PAD + cols * minColW + (cols - 1) * COL_GAP;
+    };
+    while (columns > 1 && minWidth(perColumn, columns) > COL_WIDTH_CAP) {
+      perColumn++;
+      columns = Math.ceil(builds.length / perColumn);
+    }
     const rowsUsed = builds.length ? Math.min(perColumn, builds.length) : 0;
 
     // Widen the canvas to keep big icons; only shrink icons past the width cap.
-    const iconGap = COL_ICON_GAP;
     let iconSize = 96;
     const swapSize = 60;
     // Per-column chip strips: a column reserves one only if it actually has chips.
@@ -286,13 +314,11 @@ export class ShareImageService {
     void (async () => {
       // Save the miss counter so a failed prefetch does not inflate the next render.
       const savedMissing = this.missingIcons;
-      // Collection size first (primary share path), then the single-build size.
-      for (const px of [COLLECTION_ICON_PX, ICON_REQUEST_PX]) {
-        const keys = await this.preload(items, px);
-        // preload pins its keys; unpinning now keeps evictIfNeeded working.
-        this.unpin(keys);
-        await new Promise((r) => setTimeout(r, 0));
-      }
+      // Single phase at the collection size: the single-build size (ICON_REQUEST_PX) is
+      // deliberately not prefetched, so idle traffic stays at one request per item.
+      const keys = await this.preload(items, COLLECTION_ICON_PX);
+      // preload pins its keys; unpinning now keeps evictIfNeeded working.
+      this.unpin(keys);
       this.missingIcons = savedMissing;
     })().catch(() => undefined);
   }
@@ -377,13 +403,19 @@ export class ShareImageService {
     return over;
   }
 
-  /** Small scratch 2D context used to measure text before the card canvas exists. */
+  /**
+   * Cached scratch 2D context used to measure text before the card canvas exists.
+   * Returns null during SSR; its single caller sets the font before measuring.
+   */
   private measureContext(): CanvasRenderingContext2D | null {
     if (typeof document === 'undefined') return null;
-    const canvas = document.createElement('canvas');
-    canvas.width = 1;
-    canvas.height = 1;
-    return canvas.getContext('2d');
+    if (!this.scratch) {
+      const canvas = document.createElement('canvas');
+      canvas.width = 1;
+      canvas.height = 1;
+      this.scratch = canvas.getContext('2d');
+    }
+    return this.scratch;
   }
 
   /** Loads the active background image (preference data URL, else the default). */
